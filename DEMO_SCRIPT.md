@@ -2,9 +2,9 @@
 
 Creds-free rehearsal any time: `npm run demo` → http://localhost:3000 → ⚡ Inject storm.
 
-**Judging screen:** open `/?present=1` — controls are hidden; trigger storms from your phone/laptop with the curl below (or a second normal tab). Booth idle: `/?attract=1`.
+**Presentation screen:** open `/?present=1` — controls are hidden; trigger storms from your phone/laptop with the curl below (or a second normal tab). Booth idle: `/?attract=1`.
 
-Pre-flight (before judges arrive):
+Pre-flight (before showtime):
 - `curl -s https://<render-url>/healthz` → wakes the instance, expect `ok`.
 - Open the dashboard at `/`, confirm header says **live** and all 5 assets are green.
 - `curl -X POST <url>/api/demo/clear` to reset between rehearsals.

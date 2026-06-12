@@ -7,9 +7,9 @@ Autonomous severe-weather ops agent (hackathon, ~7h to demo). SENSES weather (in
 - **PROGRESS.md** — what works, what's stubbed, what's verified vs pending, what's next.
 - **DEMO_SCRIPT.md** — the demo arc and exact commands.
 
-## Hard requirements (judging-driven — never trade away)
-- Zero human input after a weather event enters the pipeline (autonomy = 20% of score).
-- Agent reasoning must stream human-readably to the dashboard (judges can't score what they can't see).
+## Hard requirements (never trade away)
+- Zero human input after a weather event enters the pipeline — autonomy is the product.
+- Agent reasoning must stream human-readably to the dashboard — reasoning nobody can see might as well not exist.
 - `POST /api/demo/inject-storm` controls **when** a storm happens, never **what** the agent does about it.
 - Runs on Render from `npm start`, binding `process.env.PORT`.
 - Secrets only via env vars. Maintain `.env.example`. **Never commit `.env`.**
