@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { state, bus, pushFeed, pushAgentLog, broadcastState, getPublicState, resetWorld } from './state.js';
 import { createStorm } from './data/injected.js';
 import { startLoop, triggerTickNow } from './agent/loop.js';
+import { runToolCall, initComposio } from './agent/tools.js';
 import { initClickHouse } from './log/clickhouse.js';
 
 // UI-layer tap: mirror every '[AGENT LOG]' console line into state + SSE so the
@@ -63,6 +64,44 @@ app.post('/api/demo/clear', (req, res) => {
   resetWorld();
   broadcastState();
   res.json({ ok: true });
+});
+
+// Composio connectivity check: fires a REAL Slack notification (and optionally
+// an email) through the exact same dispatcher the agent uses, without touching
+// asset status. One curl proves notifications before the demo.
+app.post('/api/demo/test-notification', async (req, res) => {
+  const body = req.body ?? {};
+  const asset = state.assets.find((a) => a.id === (body.asset_id ?? 'crew-north')) ?? state.assets[0];
+  const calls = [
+    {
+      name: 'send_slack_alert',
+      input: {
+        channel: asset.contact?.slack ?? '#ops',
+        message: body.message ?? `Stormline connectivity test — ${new Date().toISOString()}`,
+        severity: 'info',
+        asset_id: asset.id,
+        rationale: 'Connectivity test requested via /api/demo/test-notification.',
+      },
+    },
+  ];
+  if (body.email) {
+    calls.push({
+      name: 'send_customer_email',
+      input: {
+        to: typeof body.email === 'string' ? body.email : undefined,
+        subject: 'Stormline connectivity test',
+        body: 'This is a Stormline notification connectivity test. If you can read this, Composio email delivery works.',
+        asset_id: asset.id,
+        rationale: 'Connectivity test requested via /api/demo/test-notification.',
+      },
+    });
+  }
+  const results = [];
+  for (const call of calls) {
+    const r = await runToolCall(call, { mutateAsset: false });
+    results.push({ tool: call.name, ...r });
+  }
+  res.json({ ok: results.every((r) => r.ok), simulated: results.every((r) => r.simulated === true), results });
 });
 
 // OpenUI (3rd sponsor): generate a professional status-card component from the
@@ -158,5 +197,6 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`[stormline] listening on :${port} — demoMode=${process.env.DEMO_MODE !== 'false'}`);
   initClickHouse();
+  initComposio();
   startLoop();
 });

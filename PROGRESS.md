@@ -43,7 +43,11 @@
 - No `COMPOSIO_API_KEY` → labeled `WOULD EXECUTE` dry-run (verified in sandbox: actions once, dedupe skips, statuses correct). Real runs feed as `EXECUTED …`; failures feed as errors and never change asset status.
 - **Caveat for first real run:** Slack/Gmail/Calendar argument names follow Composio's standard catalog but couldn't be verified offline (their API is egress-blocked in the build sandbox). If a name is off, the exact Composio error text appears in the feed/console — fix is a one-liner in the `executors` map.
 - **User prerequisites:** Composio dashboard → connect Slack, Gmail, Google Calendar under your user/entity (set `COMPOSIO_USER_ID` if it isn't `default`), set `COMPOSIO_API_KEY` (+ optional `SLACK_CHANNEL_ID`, `DEMO_EMAIL_TO`, `DEMO_CALENDAR_EVENT_ID`).
-- **B3 = M2 acceptance gate (user):** inject storm → real Slack message lands; next tick logs "Skipped duplicate" instead of re-sending; then email; then calendar.
+- **B3 = notification gate (user, ~2 min):**
+  1. `npm run dev` → boot feed shows `Composio connected — accounts: slack, …` (the boot check lists your connected toolkits; if it says "no connected accounts", connect them in the dashboard first).
+  2. `curl -X POST localhost:3000/api/demo/test-notification` → **a real message lands in Slack** and the response shows `{ok:true, simulated:false}`. Add `-d '{"email":true}' -H 'content-type: application/json'` to also test Gmail. The test uses the exact dispatcher the agent uses but never flips asset status.
+  3. Inject a fire → `EXECUTED send_slack_alert …` lines in the feed; next tick logs "Skipped duplicate" instead of re-sending.
+- **Hardening:** slug fallback chains per tool (`SLACK_SEND_MESSAGE`→`SLACK_CHAT_POST_MESSAGE`; `GOOGLECALENDAR_UPDATE_EVENT`→`GOOGLECALENDAR_PATCH_EVENT`; `GMAIL_SEND_EMAIL` confirmed as a real slug from the SDK's own type docs); Slack channel sent without the leading `#`; delivery failures appear as gray ⚠ system lines (full error in console), never red cards, and never mark an asset handled.
 
 ## Works (verified in the build sandbox, no creds needed)
 - `npm start` boots; loop ticks every `POLL_SECONDS` (default 30s); overlap guard.

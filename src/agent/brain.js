@@ -2,6 +2,7 @@
 // One-shot by design: each tick is a fresh messages.create with fresh context;
 // tool_use blocks are treated as structured decisions (no tool_result round-trip).
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
+import { getComposioOpenAITools } from './tools.js';
 
 // Pinned to Sonnet 4.5 — do NOT default to 4.6 or higher (account constraint).
 export const DEFAULT_MODEL = 'anthropic.claude-sonnet-4-5-20250929-v1:0';
@@ -146,6 +147,7 @@ const SYSTEM_PROMPT = `You are Stormline, an autonomous severe-weather and wildf
 
 Rules:
 - Act decisively when threat confidence is >= 0.7 AND an asset is inside or near the threat area, or its time window overlaps the threat window.
+- If the incoming threat data shows "severe" or "extreme" levels, you MUST dispatch a live emergency alert — via send_slack_alert, or the SLACK_SEND_MESSAGE external tool when available — detailing the threat's ETA and the affected assets, before any other action.
 - Every tool call's "rationale" must be one short sentence; it is shown live on an ops dashboard.
 - NEVER repeat an action listed under ACTIONS ALREADY TAKEN. If everything necessary is already done, make no tool calls.
 - When the threat to a previously alerted asset has passed or moved away, call mark_asset_safe.
@@ -302,11 +304,14 @@ async function decideOpenRouter(userMessage) {
     throw new Error('OpenRouter not configured: set OPENROUTER_API_KEY (or unset BRAIN_PROVIDER to use Bedrock)');
   }
   const base = (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+  // Composio's own OpenAI-formatted tool defs, appended to the curated five
+  // (empty when no COMPOSIO_API_KEY or Composio is unreachable).
+  const dynamicTools = await getComposioOpenAITools();
 
   let lastError;
   for (const model of openRouterModels()) {
     try {
-      console.log(`[AGENT LOG] calling Claude via OpenRouter (${model}) with ${TOOLS.length} tools…`);
+      console.log(`[AGENT LOG] calling Claude via OpenRouter (${model}) with ${TOOLS.length}+${dynamicTools.length} tools…`);
       const r = await fetch(`${base}/chat/completions`, {
         method: 'POST',
         headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'content-type': 'application/json' },
@@ -318,10 +323,13 @@ async function decideOpenRouter(userMessage) {
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: userMessage },
           ],
-          tools: TOOLS.map((t) => ({
-            type: 'function',
-            function: { name: t.name, description: t.description, parameters: t.input_schema },
-          })),
+          tools: [
+            ...TOOLS.map((t) => ({
+              type: 'function',
+              function: { name: t.name, description: t.description, parameters: t.input_schema },
+            })),
+            ...dynamicTools,
+          ],
         }),
       });
       if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
