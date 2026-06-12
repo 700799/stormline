@@ -1,6 +1,6 @@
 # PROGRESS
 
-**Status: M1 + M2 + M3 + submission pivot built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: your local verification (`npm run demo`), then Render deploy.**
+**Status: M1 + M2 + M3 + submission pivot built; PR #1 merged to main. OpenRouter brain provider added (use your existing key — O-checks below). Next: O1/O2 locally, Composio + OpenUI keys, Render deploy.**
 
 ## Submission pivot (final)
 - **Jua aborted.** `src/data/jua.js` deleted; `JUA_*` env vars removed. `DEMO_MODE=false` now ingests `src/data/mock-payload.json` via `src/data/forecast.js normalizePayload()` → same canonical storm shape, identical agent path. Verified: mock storm drives statuses + one deduped action, stable id keeps the brain quiet after the first decision. Edit the JSON to change the "live" storm.
@@ -40,6 +40,18 @@
 - `[AGENT LOG]` console instrumentation: per-tick context sent to the brain → (real path) raw Bedrock response JSON → thought process → decision summary → per-tool execution + guardrail lines.
 
 ## Pending user verification (sandbox has no creds + restricted egress)
+
+### Real brain via OpenRouter — fastest path (you already have this key)
+- **O1 OpenRouter smoke test** (run locally):
+  ```bash
+  curl -s https://openrouter.ai/api/v1/chat/completions \
+    -H "Authorization: Bearer $OPENROUTER_API_KEY" -H 'content-type: application/json' \
+    -d '{"model":"anthropic/claude-sonnet-4.5","max_tokens":32,"messages":[{"role":"user","content":"Reply with exactly: pong"}]}'
+  ```
+- **O2 = real-brain gate**: put `OPENROUTER_API_KEY` in `.env` → `POLL_SECONDS=10 npm run dev` → inject a storm → real Claude Sonnet 4.5 reasoning + tool calls appear in the feed and `[AGENT LOG]` (raw response logged); no duplicate action per asset+storm across ticks. Dashboard header shows `openrouter:anthropic/claude-sonnet-4.5`.
+- If a tool-call response ever looks off, the `[AGENT LOG] raw OpenRouter response` line shows exactly what came back — send it over.
+
+### Bedrock path (optional alternative)
 - **B1 Bedrock smoke test** (run locally):
   ```bash
   export AWS_REGION=... AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=...

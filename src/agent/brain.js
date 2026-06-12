@@ -4,6 +4,21 @@
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 
 export const DEFAULT_MODEL = 'anthropic.claude-sonnet-4-6';
+export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-4.5';
+
+// FAKE_BRAIN wins; then explicit BRAIN_PROVIDER; else auto-detect by key.
+function brainProvider() {
+  const forced = process.env.BRAIN_PROVIDER;
+  if (forced === 'openrouter' || forced === 'bedrock') return forced;
+  return process.env.OPENROUTER_API_KEY ? 'openrouter' : 'bedrock';
+}
+
+export function activeModelLabel() {
+  if (process.env.FAKE_BRAIN === 'true') return 'fake-brain';
+  return brainProvider() === 'openrouter'
+    ? `openrouter:${process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL}`
+    : process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL;
+}
 
 // Every tool carries these two: `rationale` powers the dashboard reasoning feed,
 // `asset_id` gives dedupe a uniform asset identity (key = tool:asset_id:threatId).
@@ -181,12 +196,16 @@ export async function decide(ctx) {
   console.log(`[AGENT LOG] ── tick ${ctx.tick}: context sent to the brain ──\n${userMessage}\n[AGENT LOG] ── end context ──`);
 
   if (process.env.FAKE_BRAIN === 'true') {
-    console.log('[AGENT LOG] FAKE_BRAIN=true — canned decision, no Bedrock call');
+    console.log('[AGENT LOG] FAKE_BRAIN=true — canned decision, no model call');
     return logDecision(fakeDecision(ctx), 'fake brain');
   }
 
+  if (brainProvider() === 'openrouter') return decideOpenRouter(userMessage);
+
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
-    throw new Error('Bedrock not configured: set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION (or FAKE_BRAIN=true for a dry run)');
+    throw new Error(
+      'No brain configured: set OPENROUTER_API_KEY (fastest), or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION for Bedrock, or FAKE_BRAIN=true for a dry run'
+    );
   }
   // SDK default timeout is 10 minutes — combined with the loop's overlap guard
   // that would freeze all future ticks behind one hung call.
@@ -215,6 +234,51 @@ export async function decide(ctx) {
     },
     model
   );
+}
+
+// Claude via OpenRouter (OpenAI-compatible chat completions + function calling).
+// Same one-shot pattern as the Bedrock path; tool defs are reused via a 1:1 map.
+async function decideOpenRouter(userMessage) {
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error('OpenRouter not configured: set OPENROUTER_API_KEY (or unset BRAIN_PROVIDER to use Bedrock)');
+  }
+  const base = (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+  const model = process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
+  console.log(`[AGENT LOG] calling Claude via OpenRouter (${model}) with ${TOOLS.length} tools…`);
+
+  const r = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'content-type': 'application/json' },
+    signal: AbortSignal.timeout(25_000), // same hang-protection rationale as the Bedrock client
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+      tools: TOOLS.map((t) => ({
+        type: 'function',
+        function: { name: t.name, description: t.description, parameters: t.input_schema },
+      })),
+    }),
+  });
+  if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  const data = await r.json();
+  const msg = data.choices?.[0]?.message ?? {};
+  const finishReason = data.choices?.[0]?.finish_reason ?? 'unknown';
+  console.log(`[AGENT LOG] raw OpenRouter response (finish_reason=${finishReason}):\n${JSON.stringify(msg, null, 2)}`);
+
+  const toolCalls = [];
+  for (const c of msg.tool_calls ?? []) {
+    try {
+      toolCalls.push({ id: c.id, name: c.function.name, input: JSON.parse(c.function.arguments || '{}') });
+    } catch (e) {
+      // fail soft, consistent with the dispatcher: one bad call never kills the tick
+      console.log(`[AGENT LOG] skipping malformed tool call ${c.function?.name ?? '?'} — ${e.message}`);
+    }
+  }
+  return logDecision({ reasoning: (msg.content ?? '').trim(), toolCalls, stopReason: finishReason }, `openrouter:${model}`);
 }
 
 // Deterministic canned decisions (FAKE_BRAIN=true): clearly labeled, re-issues the
