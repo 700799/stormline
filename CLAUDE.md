@@ -21,6 +21,7 @@ Autonomous severe-weather ops agent (hackathon, ~7h to demo). SENSES weather (in
 
 ## Stack & commands
 Node ≥20.6 (ES modules), Express 5, SSE, `@anthropic-ai/bedrock-sdk`, `@composio/core` (M2).
+- Brain provider: `OPENROUTER_API_KEY` set → Claude via OpenRouter (OpenAI-compatible, default model `anthropic/claude-sonnet-4.5`); else AWS Bedrock; `FAKE_BRAIN=true` overrides both; `BRAIN_PROVIDER` forces a choice.
 - Setup: `cp .env.example .env`, fill creds → `npm run dev` (uses `--env-file`). Prod: `npm start`.
 - `npm run demo` — zero-creds rehearsal: FAKE_BRAIN + fast ticks; open http://localhost:3000.
 - Fast iteration: `POLL_SECONDS=5`. No AWS creds: `FAKE_BRAIN=true` (canned decisions, clearly labeled — also the live-demo fallback if Bedrock flakes).

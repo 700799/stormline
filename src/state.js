@@ -2,6 +2,7 @@
 // server.js subscribes to `bus`; loop.js/tools.js publish through pushFeed/broadcastState.
 import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
+import { activeModelLabel } from './agent/brain.js';
 
 export const bus = new EventEmitter();
 bus.setMaxListeners(100);
@@ -46,7 +47,7 @@ export const state = {
     lastDecisionAt: null,
     lastError: null,
     sseClients: 0,
-    model: process.env.FAKE_BRAIN === 'true' ? 'fake-brain' : process.env.BEDROCK_MODEL_ID || 'anthropic.claude-sonnet-4-6',
+    model: activeModelLabel(),
   },
 };
 
