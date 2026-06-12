@@ -110,7 +110,7 @@
   }
   #agentlog .ln { margin-bottom: 6px; }
   #agentlog .ln .t { color: #3d5260; margin-right: 8px; }
-  /* ── presentation mode (?present=1): judges never see the trigger ── */
+  /* ── presentation mode (?present=1): clean demo screen, controls hidden ── */
   body.present #preset, body.present #inject, body.present #clear { display: none; }
   body.present .ev { font-size: 17px; }
   body.present .ev.reasoning { font-size: 18px; }
@@ -380,7 +380,7 @@
   es.addEventListener('agentlog', (e) => addAgentLog(JSON.parse(e.data)));
   refreshOpenUICard();
 
-  // ── URL modes: ?present=1 hides demo controls (judging screen);
+  // ── URL modes: ?present=1 hides demo controls (presentation screen);
   //    ?attract=1 auto-cycles storms (booth idle loop) ──
   const urlParams = new URLSearchParams(location.search);
   if (urlParams.has('present')) document.body.classList.add('present');

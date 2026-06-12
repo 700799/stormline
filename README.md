@@ -38,7 +38,7 @@ Same demo, but the reasoning is genuine Claude deciding which assets to protect 
 | **Weather ingestion** | Demo trigger injects synthetic storms; `DEMO_MODE=false` ingests `src/data/mock-payload.json` through the same normalize seam a live provider would use |
 | **ClickHouse** | Every decision/action/status row logged to `stormline_events` over the HTTP interface (off without `CLICKHOUSE_URL`) |
 
-## Autonomy guardrails (the part judges should poke at)
+## Autonomy guardrails (poke at them live)
 
 - **Idempotent**: dedupe key `tool:asset_id:threatId` — the agent never repeats an action for the same asset + threat, provably (watch the "skipped duplicate" feed lines).
 - **Bounded**: max 5 actions per tick; weather-hash skip means Claude isn't even called when nothing changed.
@@ -62,7 +62,7 @@ src/data/forecast.js   mock-payload ingestion via the same normalize seam
 public/dashboard.html  single-file dashboard (Leaflet CDN, no build step)
 ```
 
-**Screen modes:** `/?present=1` hides the demo controls (judging screen — the trigger stays backstage) · `/?attract=1` auto-cycles storms (booth idle loop).
+**Screen modes:** `/?present=1` hides the demo controls (clean presentation screen — drive it from a second device) · `/?attract=1` auto-cycles storms (booth idle loop).
 
 Deploy: one-click via `render.yaml` (Render → New → Blueprint), or manually: Web Service → build `npm install`, start `npm start` (binds `process.env.PORT`), health check `/healthz`.
 

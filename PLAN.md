@@ -1,6 +1,6 @@
 # PLAN — milestones (build strictly in order)
 
-Mission: autonomous severe-weather ops agent. Judging: autonomy (20%), visible reasoning, working integrations, demo quality. Demo trigger (`/api/demo/inject-storm`) controls WHEN, never WHAT.
+Mission: autonomous severe-weather ops agent. Priorities: autonomy, visible reasoning, working integrations, demo quality. Demo trigger (`/api/demo/inject-storm`) controls WHEN, never WHAT.
 
 ## M1 — Brain on a wire ✅ (built; Bedrock live-call check pending user creds)
 `npm start` runs; loop ticks; with DEMO_MODE=true and an injected storm, Claude (Bedrock) returns tool calls; reasoning + intended actions print to console and appear in GET /api/state. No Composio yet — tools.js logs "would execute X".
