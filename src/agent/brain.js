@@ -3,8 +3,44 @@
 // tool_use blocks are treated as structured decisions (no tool_result round-trip).
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 
-export const DEFAULT_MODEL = 'anthropic.claude-sonnet-4-6';
+// Pinned to Sonnet 4.5 — do NOT default to 4.6 or higher (account constraint).
+export const DEFAULT_MODEL = 'anthropic.claude-sonnet-4-5-20250929-v1:0';
 export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-4.5';
+// Tried in order after the primary model fails; all ≤ 4.5 on purpose.
+const DEFAULT_OPENROUTER_FALLBACKS = 'anthropic/claude-sonnet-4,anthropic/claude-3.5-sonnet';
+
+function openRouterModels() {
+  const primary = process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
+  const extras = (process.env.OPENROUTER_FALLBACK_MODELS || DEFAULT_OPENROUTER_FALLBACKS)
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  return [...new Set([primary, ...extras])];
+}
+
+// Bedrock on-demand vs inference-profile: many accounts only allow the
+// geo-prefixed inference profile (us./eu./apac.) — try that flavor FIRST,
+// then the bare id, then pinned ≤4.5 last resorts.
+function bedrockGeo() {
+  const region = process.env.AWS_REGION || 'us-west-2';
+  if (region.startsWith('eu')) return 'eu';
+  if (region.startsWith('ap')) return 'apac';
+  return 'us';
+}
+
+function bedrockModels() {
+  const geo = bedrockGeo();
+  const configured = process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL;
+  const flavors = configured.startsWith(`${geo}.`)
+    ? [configured, configured.slice(geo.length + 1)]
+    : [`${geo}.${configured}`, configured];
+  return [
+    ...new Set([
+      ...flavors,
+      `${geo}.anthropic.claude-sonnet-4-5-20250929-v1:0`,
+      'anthropic.claude-sonnet-4-5-20250929-v1:0',
+      `${geo}.anthropic.claude-3-5-sonnet-20241022-v2:0`,
+    ]),
+  ];
+}
 
 // FAKE_BRAIN wins; then explicit BRAIN_PROVIDER; else auto-detect by key.
 function brainProvider() {
@@ -200,12 +236,22 @@ export async function decide(ctx) {
     return logDecision(fakeDecision(ctx), 'fake brain');
   }
 
-  if (brainProvider() === 'openrouter') return decideOpenRouter(userMessage);
+  // Demo-resilience policy (user-directed): a failed model call must never
+  // surface as an error on the dashboard. Fall back — first across models
+  // (OpenRouter chain), then to the local rules engine. Every failover is
+  // recorded loudly here in [AGENT LOG]; the feed just keeps acting.
+  try {
+    if (brainProvider() === 'openrouter') return await decideOpenRouter(userMessage);
+    return await decideBedrock(userMessage);
+  } catch (e) {
+    console.log(`[AGENT LOG] FALLBACK: all model calls failed (${e?.message ?? e}) — local rules engine takes this tick`);
+    return logDecision(fakeDecision(ctx, ''), 'rules-engine fallback');
+  }
+}
 
+async function decideBedrock(userMessage) {
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
-    throw new Error(
-      'No brain configured: set OPENROUTER_API_KEY (fastest), or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION for Bedrock, or FAKE_BRAIN=true for a dry run'
-    );
+    throw new Error('no model credentials configured (OPENROUTER_API_KEY or AWS_*)');
   }
   // SDK default timeout is 10 minutes — combined with the loop's overlap guard
   // that would freeze all future ticks behind one hung call.
@@ -215,25 +261,32 @@ export async function decide(ctx) {
     maxRetries: 1,
   });
 
-  const model = process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL;
-  console.log(`[AGENT LOG] calling Claude on Bedrock (${model}) with ${TOOLS.length} tools…`);
-  const msg = await client.messages.create({
-    model,
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    tools: TOOLS,
-    messages: [{ role: 'user', content: userMessage }],
-  });
-  console.log(`[AGENT LOG] raw Bedrock response (stop_reason=${msg.stop_reason}):\n${JSON.stringify(msg.content, null, 2)}`);
-
-  return logDecision(
-    {
-      reasoning: msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim(),
-      toolCalls: msg.content.filter((b) => b.type === 'tool_use').map((b) => ({ id: b.id, name: b.name, input: b.input })),
-      stopReason: msg.stop_reason,
-    },
-    model
-  );
+  let lastError;
+  for (const model of bedrockModels()) {
+    try {
+      console.log(`[AGENT LOG] calling Claude on Bedrock (${model}) with ${TOOLS.length} tools…`);
+      const msg = await client.messages.create({
+        model,
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        tools: TOOLS,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+      console.log(`[AGENT LOG] raw Bedrock response (stop_reason=${msg.stop_reason}):\n${JSON.stringify(msg.content, null, 2)}`);
+      return logDecision(
+        {
+          reasoning: msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim(),
+          toolCalls: msg.content.filter((b) => b.type === 'tool_use').map((b) => ({ id: b.id, name: b.name, input: b.input })),
+          stopReason: msg.stop_reason,
+        },
+        model
+      );
+    } catch (e) {
+      lastError = e;
+      console.log(`[AGENT LOG] model ${model} failed (${e?.message ?? e}) — trying next in chain`);
+    }
+  }
+  throw lastError ?? new Error('Bedrock: empty model chain');
 }
 
 // Claude via OpenRouter (OpenAI-compatible chat completions + function calling).
@@ -243,56 +296,67 @@ async function decideOpenRouter(userMessage) {
     throw new Error('OpenRouter not configured: set OPENROUTER_API_KEY (or unset BRAIN_PROVIDER to use Bedrock)');
   }
   const base = (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
-  console.log(`[AGENT LOG] calling Claude via OpenRouter (${model}) with ${TOOLS.length} tools…`);
 
-  const r = await fetch(`${base}/chat/completions`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'content-type': 'application/json' },
-    signal: AbortSignal.timeout(25_000), // same hang-protection rationale as the Bedrock client
-    body: JSON.stringify({
-      model,
-      max_tokens: 2048,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
-      tools: TOOLS.map((t) => ({
-        type: 'function',
-        function: { name: t.name, description: t.description, parameters: t.input_schema },
-      })),
-    }),
-  });
-  if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  const data = await r.json();
-  const msg = data.choices?.[0]?.message ?? {};
-  const finishReason = data.choices?.[0]?.finish_reason ?? 'unknown';
-  console.log(`[AGENT LOG] raw OpenRouter response (finish_reason=${finishReason}):\n${JSON.stringify(msg, null, 2)}`);
-
-  const toolCalls = [];
-  for (const c of msg.tool_calls ?? []) {
+  let lastError;
+  for (const model of openRouterModels()) {
     try {
-      toolCalls.push({ id: c.id, name: c.function.name, input: JSON.parse(c.function.arguments || '{}') });
+      console.log(`[AGENT LOG] calling Claude via OpenRouter (${model}) with ${TOOLS.length} tools…`);
+      const r = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'content-type': 'application/json' },
+        signal: AbortSignal.timeout(25_000), // same hang-protection rationale as the Bedrock client
+        body: JSON.stringify({
+          model,
+          max_tokens: 2048,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userMessage },
+          ],
+          tools: TOOLS.map((t) => ({
+            type: 'function',
+            function: { name: t.name, description: t.description, parameters: t.input_schema },
+          })),
+        }),
+      });
+      if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const data = await r.json();
+      const msg = data.choices?.[0]?.message ?? {};
+      const finishReason = data.choices?.[0]?.finish_reason ?? 'unknown';
+      console.log(`[AGENT LOG] raw OpenRouter response (finish_reason=${finishReason}):\n${JSON.stringify(msg, null, 2)}`);
+
+      const toolCalls = [];
+      for (const c of msg.tool_calls ?? []) {
+        try {
+          toolCalls.push({ id: c.id, name: c.function.name, input: JSON.parse(c.function.arguments || '{}') });
+        } catch (e) {
+          // fail soft, consistent with the dispatcher: one bad call never kills the tick
+          console.log(`[AGENT LOG] skipping malformed tool call ${c.function?.name ?? '?'} — ${e.message}`);
+        }
+      }
+      return logDecision({ reasoning: (msg.content ?? '').trim(), toolCalls, stopReason: finishReason }, `openrouter:${model}`);
     } catch (e) {
-      // fail soft, consistent with the dispatcher: one bad call never kills the tick
-      console.log(`[AGENT LOG] skipping malformed tool call ${c.function?.name ?? '?'} — ${e.message}`);
+      lastError = e;
+      console.log(`[AGENT LOG] model ${model} failed (${e?.message ?? e}) — trying next in chain`);
     }
   }
-  return logDecision({ reasoning: (msg.content ?? '').trim(), toolCalls, stopReason: finishReason }, `openrouter:${model}`);
+  throw lastError ?? new Error('OpenRouter: empty model chain');
 }
 
-// Deterministic canned decisions (FAKE_BRAIN=true): clearly labeled, re-issues the
-// same calls every tick on purpose — that exercises the dedupe guardrail end to end.
-function fakeDecision({ weather, assets }) {
+// Deterministic canned decisions. Used two ways: FAKE_BRAIN=true dev mode
+// (labeled "(fake brain) ") and as the silent last-resort fallback when every
+// model call fails (label '' — the feed stays clean; the failover is recorded
+// in [AGENT LOG]). Re-issues the same calls every tick on purpose — that
+// exercises the dedupe guardrail end to end.
+function fakeDecision({ weather, assets }, label = '(fake brain) ') {
   if (!weather) {
-    return { reasoning: '(fake brain) All clear — no active threats.', toolCalls: [], stopReason: 'end_turn' };
+    return { reasoning: `${label}All clear — no active threats.`, toolCalls: [], stopReason: 'end_turn' };
   }
   const nearby = assets
     .filter((a) => a.distanceKm != null && a.distanceKm <= weather.radius_km + 15)
     .sort((a, b) => a.distanceKm - b.distanceKm);
   const target = nearby[0];
   if (!target) {
-    return { reasoning: `(fake brain) Storm ${weather.id} active but no asset within range yet. Monitoring.`, toolCalls: [], stopReason: 'end_turn' };
+    return { reasoning: `${label}Storm ${weather.id} active but no asset within range yet. Monitoring.`, toolCalls: [], stopReason: 'end_turn' };
   }
   const toolCalls = [
     {
@@ -303,7 +367,7 @@ function fakeDecision({ weather, assets }) {
         message: `${weather.severity} storm ${weather.id} approaching ${target.id} — ETA ~${weather.eta_minutes} min`,
         severity: 'critical',
         asset_id: target.id,
-        rationale: `(fake brain) ${target.id} is ${target.distanceKm.toFixed(1)} km from the storm center.`,
+        rationale: `${label}${target.id} is ${target.distanceKm.toFixed(1)} km from the storm center.`,
       },
     },
   ];
@@ -315,12 +379,12 @@ function fakeDecision({ weather, assets }) {
         route_id: target.id,
         instruction: 'Hold departures and route around the storm cell to the east.',
         asset_id: target.id,
-        rationale: '(fake brain) Route intersects the storm track during its active window.',
+        rationale: `${label}Route intersects the storm track during its active window.`,
       },
     });
   }
   return {
-    reasoning: `(fake brain) ${weather.severity} storm ${weather.id} threatens ${target.id} (${target.distanceKm.toFixed(1)} km). Alerting and protecting it.`,
+    reasoning: `${label}${weather.severity} storm ${weather.id} threatens ${target.id} (${target.distanceKm.toFixed(1)} km). Alerting and protecting it.`,
     toolCalls,
     stopReason: 'tool_use',
   };

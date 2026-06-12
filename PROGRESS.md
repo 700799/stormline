@@ -8,6 +8,11 @@
 - **Live `[AGENT LOG]` on the dashboard.** UI-layer console tap in `server.js` mirrors every `[AGENT LOG]` line into `state.agentLog` (ring buffer, in `/api/state`) and a new additive SSE event `agentlog`; the panel streams it terminal-style. Core loop/brain/tools untouched (only the forecast import changed, forced by the Jua removal).
 - **Verify locally with one command:** `npm run demo` → open http://localhost:3000 (FAKE_BRAIN + 5s ticks; click ⚡ Inject storm). With your `.env` creds use `npm run dev` instead for the real brain.
 
+## Model pinning + silent failover (user-directed)
+- **All defaults pinned to Sonnet 4.5** (never 4.6+): Bedrock `anthropic.claude-sonnet-4-5-20250929-v1:0`, OpenRouter `anthropic/claude-sonnet-4.5`.
+- **Bedrock model chain**: the geo inference-profile flavor (`us.`/`eu.`/`apac.` from AWS_REGION) is tried FIRST — fixes the "on-demand throughput isn't supported" 400 — then the bare id, then ≤4.5 last resorts. **OpenRouter chain**: primary → `OPENROUTER_FALLBACK_MODELS` (≤4.5).
+- **Brain errors never reach the dashboard feed anymore.** If every model in the chain fails, the agent silently falls over to its local rules engine for that tick (unlabeled in the feed); every model failure and the failover itself are recorded in the console `[AGENT LOG]`, and the actual serving model shows there too. This is deliberate demo-resilience, requested explicitly — check the console to know what ran.
+
 ## Presentation & ops hardening (power PR)
 - **M5 ClickHouse decision log** (4th sponsor): `src/log/clickhouse.js` subscribes to the feed bus, buffers rows, flushes to ClickHouse's HTTP interface every 5s (table auto-created, `stormline_events`; `ts` kept as ISO String by design). OFF without `CLICKHOUSE_URL`; fail-soft with anti-spammed errors; `stats.loggedRows` shows in `/api/state` + the status card. Wire format unverifiable offline (egress) — first run with a ClickHouse Cloud URL confirms; errors print verbatim in the feed.
 - **Presentation mode** `/?present=1` — hides preset/inject/reset controls for a clean demo screen (drive it from a second device) and bumps feed type size.
