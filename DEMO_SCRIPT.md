@@ -1,5 +1,7 @@
 # DEMO SCRIPT (~3 minutes)
 
+Creds-free rehearsal any time: `npm run demo` → http://localhost:3000 → ⚡ Inject storm.
+
 Pre-flight (before judges arrive):
 - `curl -s https://<render-url>/healthz` → wakes the instance, expect `ok`.
 - Open the dashboard at `/`, confirm header says **live** and all 5 assets are green.

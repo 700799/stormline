@@ -36,6 +36,7 @@ export const state = {
   actionsTaken: [], // { dedupeKey, tool, assetId, threatId, input, rationale, at, result }
   actionKeys: new Set(),
   feed: [],
+  agentLog: [], // ring buffer of '[AGENT LOG] …' console lines (tapped in server.js)
   lastWeatherHash: null,
   lastErrorText: null,
   agent: {
@@ -60,6 +61,17 @@ export function pushFeed({ type, text, data }) {
   return ev;
 }
 
+let agentLogSeq = 0;
+
+// NOTE: must never console.log (the server's console tap calls this).
+export function pushAgentLog(text) {
+  const entry = { id: ++agentLogSeq, ts: new Date().toISOString(), text };
+  state.agentLog.push(entry);
+  if (state.agentLog.length > FEED_MAX) state.agentLog.splice(0, state.agentLog.length - FEED_MAX);
+  bus.emit('agentlog', entry);
+  return entry;
+}
+
 export function getPublicState() {
   return {
     service: 'stormline',
@@ -71,6 +83,7 @@ export function getPublicState() {
     assets: state.assets,
     actionsTaken: state.actionsTaken.slice(-100),
     feed: state.feed.slice(-50),
+    agentLog: state.agentLog.slice(-80),
     agent: { ...state.agent },
   };
 }

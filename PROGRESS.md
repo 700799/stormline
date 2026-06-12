@@ -1,6 +1,12 @@
 # PROGRESS
 
-**Status: M1 + M2 + M3 built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: your local verification, then Render deploy; after that M4 (Jua live data).**
+**Status: M1 + M2 + M3 + submission pivot built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: your local verification (`npm run demo`), then Render deploy.**
+
+## Submission pivot (final)
+- **Jua aborted.** `src/data/jua.js` deleted; `JUA_*` env vars removed. `DEMO_MODE=false` now ingests `src/data/mock-payload.json` via `src/data/forecast.js normalizePayload()` → same canonical storm shape, identical agent path. Verified: mock storm drives statuses + one deduped action, stable id keeps the brain quiet after the first decision. Edit the JSON to change the "live" storm.
+- **OpenUI integrated (3rd sponsor).** `GET /api/ui/openui-card` calls an OpenAI-chat-completions-compatible OpenUI endpoint (`OPENUI_BASE_URL`/`OPENUI_MODEL`/`OPENUI_API_KEY` env-overridable, `THESYS_API_KEY` fallback) to generate a professional status-card component from live world state; the dashboard's new bottom panel renders it in a sandboxed iframe and refreshes every 45s. **No key → labeled "local fallback — no OpenUI key" card (verified). Generated path is key-dependent and was NOT verifiable offline** (sponsor endpoints egress-blocked in the build sandbox) — first run with a key will confirm; errors surface in the panel badge.
+- **Live `[AGENT LOG]` on the dashboard.** UI-layer console tap in `server.js` mirrors every `[AGENT LOG]` line into `state.agentLog` (ring buffer, in `/api/state`) and a new additive SSE event `agentlog`; the panel streams it terminal-style. Core loop/brain/tools untouched (only the forecast import changed, forced by the Jua removal).
+- **Verify locally with one command:** `npm run demo` → open http://localhost:3000 (FAKE_BRAIN + 5s ticks; click ⚡ Inject storm). With your `.env` creds use `npm run dev` instead for the real brain.
 
 ## M3 — The face (dashboard)
 - `public/dashboard.html` rewritten: single file, CDN-only (Leaflet 1.9.4 via cdnjs + CARTO dark basemap — loads browser-side), dark high-contrast, large fonts.
