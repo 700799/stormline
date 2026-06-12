@@ -110,6 +110,11 @@
   }
   #agentlog .ln { margin-bottom: 6px; }
   #agentlog .ln .t { color: #3d5260; margin-right: 8px; }
+  /* ── presentation mode (?present=1): judges never see the trigger ── */
+  body.present #preset, body.present #inject, body.present #clear { display: none; }
+  body.present .ev { font-size: 17px; }
+  body.present .ev.reasoning { font-size: 18px; }
+  .modebadge { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 3px 8px; border-radius: 4px; background: #312e81; color: #c7d2fe; }
 </style>
 </head>
 <body>
@@ -304,6 +309,7 @@
       <div class="row"><span>Weather</span><b>${s.weather ? `${esc(s.weather.severity)} ${esc(s.weather.kind)} · ETA ~${s.weather.eta_minutes} min` : 'clear'}</b></div>
       <div class="row"><span>Assets</span><b><span style="color:var(--safe)">${counts.safe ?? 0} safe</span> · <span style="color:var(--watch)">${counts.watch ?? 0} watch</span> · <span style="color:var(--threatened)">${counts.threatened ?? 0} threatened</span> · <span style="color:var(--handled)">${counts.handled ?? 0} handled</span></b></div>
       <div class="row"><span>Decisions / actions / repeats blocked</span><b>${s.stats?.decisions ?? 0} / ${s.stats?.actionsExecuted ?? 0} / ${s.stats?.duplicatesBlocked ?? 0}</b></div>
+      <div class="row"><span>Decision log (ClickHouse)</span><b>${s.stats?.loggedRows != null ? `${s.stats.loggedRows} rows` : 'off'}</b></div>
       <div class="row"><span>Brain</span><b>${esc(s.agent.model)}</b></div>
     </div>`;
   }
@@ -373,6 +379,29 @@
   es.addEventListener('feed', (e) => addFeed(JSON.parse(e.data)));
   es.addEventListener('agentlog', (e) => addAgentLog(JSON.parse(e.data)));
   refreshOpenUICard();
+
+  // ── URL modes: ?present=1 hides demo controls (judging screen);
+  //    ?attract=1 auto-cycles storms (booth idle loop) ──
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.has('present')) document.body.classList.add('present');
+  if (urlParams.has('attract')) {
+    const badge = document.createElement('span');
+    badge.className = 'modebadge';
+    badge.textContent = 'ATTRACT';
+    document.querySelector('header .spacer').before(badge);
+    const presets = [...document.querySelectorAll('#preset option')].map((o) => o.value);
+    let phase = 'inject', phaseAt = Date.now() + 4000;
+    setInterval(() => {
+      if (Date.now() < phaseAt) return;
+      if (phase === 'inject') {
+        fetch('/api/demo/inject-storm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: presets[Math.floor(Math.random() * presets.length)] });
+        phase = 'clear'; phaseAt = Date.now() + 75_000; // let the storm play out
+      } else {
+        fetch('/api/demo/clear', { method: 'POST' });
+        phase = 'inject'; phaseAt = Date.now() + 8_000; // breathe, then next storm
+      }
+    }, 1000);
+  }
 </script>
 </body>
 </html>

@@ -8,6 +8,12 @@
 - **Live `[AGENT LOG]` on the dashboard.** UI-layer console tap in `server.js` mirrors every `[AGENT LOG]` line into `state.agentLog` (ring buffer, in `/api/state`) and a new additive SSE event `agentlog`; the panel streams it terminal-style. Core loop/brain/tools untouched (only the forecast import changed, forced by the Jua removal).
 - **Verify locally with one command:** `npm run demo` → open http://localhost:3000 (FAKE_BRAIN + 5s ticks; click ⚡ Inject storm). With your `.env` creds use `npm run dev` instead for the real brain.
 
+## Judge-ready ops (power PR)
+- **M5 ClickHouse decision log** (4th sponsor): `src/log/clickhouse.js` subscribes to the feed bus, buffers rows, flushes to ClickHouse's HTTP interface every 5s (table auto-created, `stormline_events`; `ts` kept as ISO String by design). OFF without `CLICKHOUSE_URL`; fail-soft with anti-spammed errors; `stats.loggedRows` shows in `/api/state` + the status card. Wire format unverifiable offline (egress) — first run with a ClickHouse Cloud URL confirms; errors print verbatim in the feed.
+- **Presentation mode** `/?present=1` — hides preset/inject/reset controls (judges never see the trigger) and bumps feed type size.
+- **Attract mode** `/?attract=1` — auto-cycles random storm presets (~75s storm, ~8s calm) for booth idle; ATTRACT badge in header.
+- **`render.yaml`** — one-click Render Blueprint deploy (free plan, health check, secrets prompted as sync:false).
+
 ## Demo polish (post-merge PR)
 - **Autonomy scoreboard** in the header — decisions / actions / **repeats blocked**, backed by `state.stats` (3 one-line counters in the loop; reset with `/api/demo/clear`). The idempotency guarantee as big live numbers.
 - **Cinematic map**: pulsing storm cell, fading storm trail, threatened assets pulse red, blue "sonar ping" at an asset the moment the agent acts on it.

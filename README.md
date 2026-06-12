@@ -36,6 +36,7 @@ Same demo, but the reasoning is genuine Claude deciding which assets to protect 
 | **Composio** (`@composio/core`) | The hands: real Slack / Gmail / Google Calendar actions (labeled dry-run without a key) |
 | **OpenUI** | Generates the dashboard's status-card component from live world state (labeled local fallback without a key) |
 | **Weather ingestion** | Demo trigger injects synthetic storms; `DEMO_MODE=false` ingests `src/data/mock-payload.json` through the same normalize seam a live provider would use |
+| **ClickHouse** | Every decision/action/status row logged to `stormline_events` over the HTTP interface (off without `CLICKHOUSE_URL`) |
 
 ## Autonomy guardrails (the part judges should poke at)
 
@@ -61,6 +62,8 @@ src/data/forecast.js   mock-payload ingestion via the same normalize seam
 public/dashboard.html  single-file dashboard (Leaflet CDN, no build step)
 ```
 
-Deploy: Render Web Service → build `npm install`, start `npm start` (binds `process.env.PORT`), health check `/healthz`.
+**Screen modes:** `/?present=1` hides the demo controls (judging screen — the trigger stays backstage) · `/?attract=1` auto-cycles storms (booth idle loop).
+
+Deploy: one-click via `render.yaml` (Render → New → Blueprint), or manually: Web Service → build `npm install`, start `npm start` (binds `process.env.PORT`), health check `/healthz`.
 
 More: **DEMO_SCRIPT.md** (stage beats) · **PLAN.md** (milestones) · **PROGRESS.md** (verification status) · **.env.example** (every knob, documented).

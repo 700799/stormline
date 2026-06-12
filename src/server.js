@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { state, bus, pushFeed, pushAgentLog, broadcastState, getPublicState, resetWorld } from './state.js';
 import { createStorm } from './data/injected.js';
 import { startLoop, triggerTickNow } from './agent/loop.js';
+import { initClickHouse } from './log/clickhouse.js';
 
 // UI-layer tap: mirror every '[AGENT LOG]' console line into state + SSE so the
 // dashboard can show the live agent log. Purely additive — the agent code and
@@ -153,5 +154,6 @@ app.get('/api/stream', (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`[stormline] listening on :${port} — demoMode=${process.env.DEMO_MODE !== 'false'}`);
+  initClickHouse();
   startLoop();
 });
