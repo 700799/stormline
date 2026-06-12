@@ -41,13 +41,16 @@ app.post('/api/demo/inject-storm', (req, res) => {
   if (body.intensity && !['moderate', 'severe', 'extreme'].includes(body.intensity)) {
     return res.status(400).json({ error: 'intensity must be moderate|severe|extreme' });
   }
+  if (body.kind && !['wildfire', 'thunderstorm'].includes(body.kind)) {
+    return res.status(400).json({ error: 'kind must be wildfire|thunderstorm' });
+  }
   try {
     const storm = createStorm(body, state.assets);
     state.injectedStorm = storm; // re-inject replaces: new id → fresh dedupe space
     state.weather = storm;
     pushFeed({
       type: 'weather',
-      text: `Injected ${storm.severity} storm targeting ${body.target ?? 'route-7'} — ETA ~${storm.eta_minutes} min, confidence ${storm.confidence}`,
+      text: `Injected ${storm.severity} ${storm.kind} targeting ${body.target ?? 'route-7'} — ETA ~${storm.eta_minutes} min, confidence ${storm.confidence}`,
     });
     triggerTickNow('inject-storm'); // not awaited: decisions arrive over SSE seconds later
     res.status(202).json({ ok: true, storm });

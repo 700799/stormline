@@ -15,9 +15,20 @@
   body {
     font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg); color: var(--text);
-    display: grid; grid-template-rows: 64px 1fr 300px; grid-template-columns: 1fr 460px;
-    grid-template-areas: "header header" "map side" "openui openui";
+    display: grid; grid-template-rows: 64px 1fr 46px 280px; grid-template-columns: 1fr 460px;
+    grid-template-areas: "header header" "map side" "timeline timeline" "openui openui";
   }
+  /* ── timeline: last 10 minutes of agent activity as colored markers ── */
+  #timeline { grid-area: timeline; position: relative; background: var(--panel); border-top: 1px solid var(--line); overflow: hidden; }
+  #timeline .axislabel { position: absolute; top: 4px; left: 16px; font-size: 11px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
+  #timeline .nowline { position: absolute; right: 70px; top: 0; bottom: 0; width: 1px; background: #3b4c61; }
+  #timeline .nowlabel { position: absolute; right: 14px; top: 16px; font-size: 11px; color: var(--dim); }
+  #timeline .tdot { position: absolute; bottom: 8px; width: 9px; height: 18px; border-radius: 3px; transform: translateX(-50%); opacity: .9; }
+  #timeline .tdot.weather { background: var(--watch); }
+  #timeline .tdot.status { background: var(--threatened); }
+  #timeline .tdot.reasoning { background: #a78bfa; height: 26px; }
+  #timeline .tdot.action { background: var(--handled); height: 26px; }
+  #timeline .tdot.system, #timeline .tdot.error { background: #56708c; height: 12px; }
   /* ── header ── */
   header {
     grid-area: header; display: flex; align-items: center; gap: 20px; padding: 0 20px;
@@ -53,9 +64,9 @@
   path.ping { transform-box: fill-box; transform-origin: center; animation: pingAnim 1.3s ease-out forwards; }
   @keyframes pingAnim { 0% { transform: scale(.25); stroke-opacity: 1; } 100% { transform: scale(3.6); stroke-opacity: 0; } }
   /* ── side column ── */
-  aside { grid-area: side; display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-left: 1px solid var(--line); }
-  .cards { padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--dim); border-radius: 8px; padding: 10px 12px; }
+  aside { grid-area: side; display: grid; grid-template-rows: minmax(0, 38vh) 1fr; overflow: hidden; border-left: 1px solid var(--line); }
+  .cards { padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg); overflow-y: auto; align-content: start; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--dim); border-radius: 8px; padding: 8px 11px; }
   .card.fresh { animation: cardFlash 1.4s ease-out; }
   @keyframes cardFlash { 0% { box-shadow: 0 0 0 4px var(--handled); } 100% { box-shadow: 0 0 0 0 transparent; } }
   .card h3 { margin: 0 0 4px; font-size: 16px; }
@@ -127,17 +138,24 @@
   <div class="stat score blocked" title="duplicate actions the agent refused to repeat — idempotency, live">repeats blocked <b id="st-dup">0</b></div>
   <div class="stat" id="weatherline">weather: clear</div>
   <div class="spacer"></div>
-  <select id="preset" title="storm preset">
-    <option value='{"intensity":"severe","target":"route-7"}'>severe @ route-7</option>
-    <option value='{"intensity":"extreme","target":"event-bayfest"}'>extreme @ BayFest</option>
-    <option value='{"intensity":"moderate","target":"crew-north"}'>moderate @ crew-north</option>
-    <option value='{"intensity":"extreme","target":"route-12"}'>extreme @ route-12</option>
+  <select id="preset" title="threat preset">
+    <option value='{"kind":"wildfire","intensity":"extreme","target":"route-21"}'>🔥 extreme fire @ Oakland Hills</option>
+    <option value='{"kind":"wildfire","intensity":"severe","target":"crew-napa"}'>🔥 severe fire @ North Bay</option>
+    <option value='{"kind":"wildfire","intensity":"moderate","target":"crew-pacifica"}'>🔥 moderate fire @ coast ridge</option>
+    <option value='{"kind":"wildfire","intensity":"severe","target":"route-7"}'>🔥 severe fire @ East Bay corridor</option>
+    <option value='{"kind":"thunderstorm","intensity":"extreme","target":"route-12"}'>⛈ extreme storm @ route-12</option>
   </select>
-  <button class="danger" id="inject">⚡ Inject storm</button>
+  <button class="danger" id="inject">⚡ Inject threat</button>
   <button id="clear">Reset</button>
 </header>
 
 <div id="map"></div>
+
+<div id="timeline">
+  <span class="axislabel">Timeline — last 10 min</span>
+  <div class="nowline"></div>
+  <span class="nowlabel">now</span>
+</div>
 
 <aside>
   <div class="cards" id="cards"></div>
@@ -201,19 +219,25 @@
       trailPts = []; trailStormId = null;
       return;
     }
+    const color = w.kind === 'wildfire' ? '#f97316' : '#ef4444';
     const c = [w.center.lat, w.center.lon];
     const head = [w.center.lat + w.movement.dLat * 3, w.center.lon + w.movement.dLon * 3];
-    if (w.id !== trailStormId) { trailStormId = w.id; trailPts = []; }
+    if (w.id !== trailStormId) {
+      // new threat (possibly a different kind/color) — rebuild the layers
+      [stormCircle, stormDot, stormHeading, trail].forEach((l) => l && map.removeLayer(l));
+      stormCircle = stormDot = stormHeading = trail = null;
+      trailStormId = w.id; trailPts = [];
+    }
     const lastPt = trailPts[trailPts.length - 1];
     if (!lastPt || lastPt[0] !== c[0] || lastPt[1] !== c[1]) {
       trailPts.push(c);
       if (trailPts.length > 40) trailPts.shift();
     }
     if (!stormCircle) {
-      stormCircle = L.circle(c, { radius: w.radius_km * 1000, className: 'storm-pulse', color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.22 }).addTo(map);
-      stormDot = L.circleMarker(c, { radius: 5, color: '#fff', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
-      stormHeading = L.polyline([c, head], { color: '#ef4444', weight: 2, dashArray: '6 6' }).addTo(map);
-      trail = L.polyline(trailPts, { color: '#ef4444', weight: 2, opacity: 0.35, dashArray: '2 8' }).addTo(map);
+      stormCircle = L.circle(c, { radius: w.radius_km * 1000, className: 'storm-pulse', color, weight: 2, fillColor: color, fillOpacity: 0.22 }).addTo(map);
+      stormDot = L.circleMarker(c, { radius: 5, color: '#fff', fillColor: color, fillOpacity: 1 }).addTo(map);
+      stormHeading = L.polyline([c, head], { color, weight: 2, dashArray: '6 6' }).addTo(map);
+      trail = L.polyline(trailPts, { color, weight: 2, opacity: 0.35, dashArray: '2 8' }).addTo(map);
     } else {
       stormCircle.setLatLng(c).setRadius(w.radius_km * 1000);
       stormDot.setLatLng(c);
@@ -232,9 +256,13 @@
 
   // ── cards ──
   const cardsEl = document.getElementById('cards');
+  const STATUS_RANK = { threatened: 0, watch: 1, handled: 2, safe: 3 };
   function renderCards(assets) {
     const now = Date.now();
-    cardsEl.innerHTML = assets
+    const sorted = [...assets].sort(
+      (a, b) => (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9) || (a.distanceKm ?? 1e9) - (b.distanceKm ?? 1e9)
+    );
+    cardsEl.innerHTML = sorted
       .map((a) => {
         const color = COLORS[a.status] ?? '#8b9bad';
         const dist = a.distanceKm != null ? ` · ${a.distanceKm} km` : '';
@@ -265,8 +293,32 @@
     if (ev.type === 'reasoning') typewrite(txt, ev.text);
     else txt.textContent = ev.text;
     if (ev.type === 'action' && ev.data?.input?.asset_id) ping(ev.data.input.asset_id);
+    addTimelineEvent(ev);
     return true;
   }
+
+  // ── timeline strip: feed events positioned over the last 10 minutes ──
+  const timelineEl = document.getElementById('timeline');
+  const TL_WINDOW_MS = 10 * 60 * 1000;
+  const tlEvents = [];
+  function addTimelineEvent(ev) {
+    tlEvents.push({ t: new Date(ev.ts).getTime(), type: ev.type, text: ev.text });
+  }
+  function renderTimeline() {
+    const now = Date.now();
+    while (tlEvents.length && tlEvents[0].t < now - TL_WINDOW_MS) tlEvents.shift();
+    for (const el of timelineEl.querySelectorAll('.tdot')) el.remove();
+    const width = timelineEl.clientWidth - 90; // leave room for the "now" gutter
+    for (const ev of tlEvents) {
+      const x = 16 + ((ev.t - (now - TL_WINDOW_MS)) / TL_WINDOW_MS) * width;
+      const dot = document.createElement('div');
+      dot.className = `tdot ${ev.type}`;
+      dot.style.left = `${x.toFixed(1)}px`;
+      dot.title = `${new Date(ev.t).toISOString().slice(11, 19)}Z [${ev.type}] ${ev.text.slice(0, 140)}`;
+      timelineEl.appendChild(dot);
+    }
+  }
+  setInterval(renderTimeline, 2000);
   function typewrite(el, text) {
     let i = 0;
     const step = Math.max(1, Math.ceil(text.length / 110)); // finish in ~1.8s regardless of length
@@ -354,8 +406,8 @@
     document.getElementById('st-dup').textContent = s.stats?.duplicatesBlocked ?? 0;
     const wl = document.getElementById('weatherline');
     wl.textContent = s.weather
-      ? `⛈ ${s.weather.severity} ${s.weather.kind} — ETA ~${s.weather.eta_minutes} min (conf ${s.weather.confidence})`
-      : 'weather: clear';
+      ? `${s.weather.kind === 'wildfire' ? '🔥' : '⛈'} ${s.weather.severity} ${s.weather.kind} — ${s.weather.kind === 'wildfire' ? `burn ${s.weather.radius_km} km, ` : ''}ETA ~${s.weather.eta_minutes} min (conf ${s.weather.confidence})`
+      : 'all clear';
     wl.classList.toggle('weather-alert', Boolean(s.weather));
     s.assets.forEach(upsertAssetLayer);
     if (!didFit) {

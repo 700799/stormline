@@ -20,6 +20,7 @@ export function normalizePayload(raw) {
     center: { lat: cell.centroid.latitude, lon: cell.centroid.longitude },
     radius_km: Math.round((cell.radius_meters ?? 15000) / 1000),
     movement: { bearing_deg: cell.heading_degrees ?? 0, speed_kmh: speedKmh, dLat: 0, dLon: 0 },
+    spread_km: cell.spread_km_per_update ?? 0,
     wind_kph: cell.max_wind_kmh ?? 0,
     rain_mm_h: cell.precip_rate_mmh ?? 0,
     confidence: cell.probability ?? 0.8,
