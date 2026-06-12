@@ -47,7 +47,7 @@ Same demo, but the reasoning is genuine Claude deciding which assets to protect 
 
 ## API
 
-`GET /` dashboard · `GET /api/state` world state · `GET /api/stream` SSE (`state`, `feed`, `agentlog`) · `POST /api/demo/inject-storm {intensity?, target?}` · `POST /api/demo/clear` · `GET /api/ui/openui-card` · `GET /healthz`
+`GET /` dashboard · `GET /api/state` world state · `GET /api/stream` SSE (`state`, `feed`, `agentlog`) · `POST /api/demo/inject-storm {kind?, intensity?, target?}` · `POST /api/demo/clear` · `POST /api/demo/test-notification {asset_id?, message?, email?}` (proves Composio delivery in one curl) · `GET /api/ui/openui-card` · `GET /healthz`
 
 ## Layout
 

@@ -6,6 +6,7 @@ Creds-free rehearsal any time: `npm run demo` → http://localhost:3000 → ⚡ 
 
 Pre-flight (before showtime):
 - `curl -s https://<render-url>/healthz` → wakes the instance, expect `ok`.
+- `curl -X POST <url>/api/demo/test-notification` → real Slack message lands (proves Composio without running an arc; boot feed should already say "Composio connected — accounts: slack…").
 - Open the dashboard at `/`, confirm header says **live** and all 5 assets are green.
 - `curl -X POST <url>/api/demo/clear` to reset between rehearsals.
 - If Bedrock flakes on stage: restart with `FAKE_BRAIN=true` (labeled fallback — say so if asked).
