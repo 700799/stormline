@@ -85,6 +85,7 @@ async function tick() {
   state.agent.lastError = null;
   state.lastWeatherHash = key;
   state.agent.lastDecisionAt = now;
+  state.stats.decisions += 1;
 
   if (decision.reasoning) pushFeed({ type: 'reasoning', text: decision.reasoning });
 
@@ -99,6 +100,7 @@ async function tick() {
     }
     const dedupeKey = `${call.name}:${call.input?.asset_id}:${threatId}`;
     if (hasAction(dedupeKey)) {
+      state.stats.duplicatesBlocked += 1;
       console.log(`[AGENT LOG] guardrail: duplicate ${dedupeKey} — already done, skipping`);
       pushFeed({ type: 'system', text: `Skipped duplicate ${call.name} for ${call.input?.asset_id} (already handled this threat)` });
       continue;
@@ -115,6 +117,7 @@ async function tick() {
       result,
     });
     executed += 1;
+    state.stats.actionsExecuted += 1;
   }
 
   // 6. SHOW

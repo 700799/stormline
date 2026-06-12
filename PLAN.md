@@ -17,8 +17,8 @@ DEMO_MODE=false ingests `src/data/mock-payload.json` through `forecast.js normal
 ## OpenUI (3rd sponsor) ✅ built — generation needs a key
 `/api/ui/openui-card` + the dashboard's bottom panel: OpenUI-generated status card (env-overridable endpoint/model; labeled local fallback card without a key) + the live `[AGENT LOG]` terminal streamed over SSE.
 
-## M5 — Stretch
-ClickHouse logging (`src/log/clickhouse.js`) + a small decisions/actions counter panel.
+## M5 — Stretch ✅ built (needs CLICKHOUSE_URL to go live)
+ClickHouse decision logging (`src/log/clickhouse.js`, bus-listener, fail-soft, OFF without creds) + the autonomy scoreboard (decisions/actions/repeats-blocked counters in header and status card).
 
 ## After each milestone
 Update PROGRESS.md (works / stubbed / next), commit with a clear message, push to `claude/confident-cannon-v06aak` (draft PR → main; merging deploys via Render).

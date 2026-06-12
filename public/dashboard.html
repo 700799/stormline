@@ -20,18 +20,24 @@
   }
   /* ── header ── */
   header {
-    grid-area: header; display: flex; align-items: center; gap: 22px; padding: 0 20px;
-    background: var(--panel); border-bottom: 1px solid var(--line); font-size: 17px;
+    grid-area: header; display: flex; align-items: center; gap: 20px; padding: 0 20px;
+    background: var(--panel); border-bottom: 1px solid var(--line); font-size: 16px;
   }
   .brand { font-size: 24px; font-weight: 800; letter-spacing: .04em; }
   .brand span { color: var(--threatened); }
   .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--dim); display: inline-block; margin-right: 6px; }
   .dot.live { background: var(--safe); box-shadow: 0 0 8px var(--safe); }
   .dot.down { background: var(--threatened); }
-  .stat b { font-size: 19px; }
+  .stat { color: var(--dim); white-space: nowrap; }
+  .stat b { font-size: 21px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stat.score b { color: #a78bfa; }
+  .stat.score.blocked b { color: var(--watch); }
+  #weatherline { font-weight: 600; }
+  #weatherline.weather-alert { color: #fecaca; animation: blinkText 1.2s ease-in-out infinite alternate; }
+  @keyframes blinkText { to { opacity: .5; } }
   .spacer { flex: 1; }
-  button {
-    font: inherit; font-weight: 700; font-size: 16px; padding: 10px 18px; cursor: pointer;
+  button, select {
+    font: inherit; font-weight: 700; font-size: 15px; padding: 9px 14px; cursor: pointer;
     border-radius: 8px; border: 1px solid var(--line); background: #1d2733; color: var(--text);
   }
   button:hover { background: #27374a; }
@@ -40,10 +46,18 @@
   /* ── map ── */
   #map { grid-area: map; background: #0b0f14; }
   .leaflet-container { background: #0d1117; }
+  path.storm-pulse { animation: stormPulse 1.8s ease-in-out infinite alternate; }
+  @keyframes stormPulse { from { fill-opacity: .14; } to { fill-opacity: .34; } }
+  path.threat-pulse { animation: threatPulse 1s ease-in-out infinite alternate; }
+  @keyframes threatPulse { from { stroke-opacity: 1; } to { stroke-opacity: .3; } }
+  path.ping { transform-box: fill-box; transform-origin: center; animation: pingAnim 1.3s ease-out forwards; }
+  @keyframes pingAnim { 0% { transform: scale(.25); stroke-opacity: 1; } 100% { transform: scale(3.6); stroke-opacity: 0; } }
   /* ── side column ── */
   aside { grid-area: side; display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-left: 1px solid var(--line); }
   .cards { padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg); }
   .card { background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--dim); border-radius: 8px; padding: 10px 12px; }
+  .card.fresh { animation: cardFlash 1.4s ease-out; }
+  @keyframes cardFlash { 0% { box-shadow: 0 0 0 4px var(--handled); } 100% { box-shadow: 0 0 0 0 transparent; } }
   .card h3 { margin: 0 0 4px; font-size: 16px; }
   .card .meta { color: var(--dim); font-size: 13px; }
   .card .last { font-size: 13px; margin-top: 6px; color: #c7d4e2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -52,7 +66,8 @@
   .feedwrap { display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-top: 1px solid var(--line); }
   .feedwrap h2 { margin: 0; padding: 12px 16px 8px; font-size: 14px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
   #feed { overflow-y: auto; padding: 0 14px 16px; }
-  .ev { padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); font-size: 15.5px; line-height: 1.45; }
+  .ev { padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); font-size: 15.5px; line-height: 1.45; animation: evIn .3s ease-out; }
+  @keyframes evIn { from { transform: translateY(-8px); opacity: 0; } }
   .ev .t { color: var(--dim); font-size: 12.5px; margin-right: 8px; font-variant-numeric: tabular-nums; }
   .ev .tag { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 4px; margin-right: 8px; color: #06090d; }
   .ev.reasoning { border-left: 6px solid #a78bfa; font-size: 16.5px; }
@@ -95,6 +110,11 @@
   }
   #agentlog .ln { margin-bottom: 6px; }
   #agentlog .ln .t { color: #3d5260; margin-right: 8px; }
+  /* ── presentation mode (?present=1): judges never see the trigger ── */
+  body.present #preset, body.present #inject, body.present #clear { display: none; }
+  body.present .ev { font-size: 17px; }
+  body.present .ev.reasoning { font-size: 18px; }
+  .modebadge { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 3px 8px; border-radius: 4px; background: #312e81; color: #c7d2fe; }
 </style>
 </head>
 <body>
@@ -102,9 +122,17 @@
   <div class="brand">STORM<span>LINE</span></div>
   <div class="stat"><span class="dot" id="dot"></span><span id="conn">connecting…</span></div>
   <div class="stat">tick <b id="tick">0</b></div>
+  <div class="stat score">decisions <b id="st-dec">0</b></div>
+  <div class="stat score">actions <b id="st-act">0</b></div>
+  <div class="stat score blocked" title="duplicate actions the agent refused to repeat — idempotency, live">repeats blocked <b id="st-dup">0</b></div>
   <div class="stat" id="weatherline">weather: clear</div>
-  <div class="stat">actions <b id="actions">0</b></div>
   <div class="spacer"></div>
+  <select id="preset" title="storm preset">
+    <option value='{"intensity":"severe","target":"route-7"}'>severe @ route-7</option>
+    <option value='{"intensity":"extreme","target":"event-bayfest"}'>extreme @ BayFest</option>
+    <option value='{"intensity":"moderate","target":"crew-north"}'>moderate @ crew-north</option>
+    <option value='{"intensity":"extreme","target":"route-12"}'>extreme @ route-12</option>
+  </select>
   <button class="danger" id="inject">⚡ Inject storm</button>
   <button id="clear">Reset</button>
 </header>
@@ -143,7 +171,9 @@
   map.setView([37.8, -122.15], 9); // Bay Area; refit to assets on first state
 
   const assetLayers = new Map(); // id → Leaflet layer
+  const assetPoint = new Map();  // id → [lat, lon] (ping anchor)
   let stormCircle = null, stormDot = null, stormHeading = null, didFit = false;
+  let trail = null, trailPts = [], trailStormId = null;
 
   function upsertAssetLayer(a) {
     const color = COLORS[a.status] ?? '#8b9bad';
@@ -156,59 +186,95 @@
       layer.bindTooltip(a.name, { direction: 'top' });
       layer.addTo(map);
       assetLayers.set(a.id, layer);
+      const pts = a.geometry.type === 'polyline' ? a.geometry.coordinates : [a.geometry.coordinates];
+      assetPoint.set(a.id, pts[Math.floor(pts.length / 2)]);
     }
     layer.setStyle({ color, fillColor: color });
+    const el = typeof layer.getElement === 'function' ? layer.getElement() : null;
+    if (el) el.classList.toggle('threat-pulse', a.status === 'threatened');
   }
 
   function updateStorm(w) {
     if (!w) {
-      [stormCircle, stormDot, stormHeading].forEach((l) => l && map.removeLayer(l));
-      stormCircle = stormDot = stormHeading = null;
+      [stormCircle, stormDot, stormHeading, trail].forEach((l) => l && map.removeLayer(l));
+      stormCircle = stormDot = stormHeading = trail = null;
+      trailPts = []; trailStormId = null;
       return;
     }
     const c = [w.center.lat, w.center.lon];
     const head = [w.center.lat + w.movement.dLat * 3, w.center.lon + w.movement.dLon * 3];
+    if (w.id !== trailStormId) { trailStormId = w.id; trailPts = []; }
+    const lastPt = trailPts[trailPts.length - 1];
+    if (!lastPt || lastPt[0] !== c[0] || lastPt[1] !== c[1]) {
+      trailPts.push(c);
+      if (trailPts.length > 40) trailPts.shift();
+    }
     if (!stormCircle) {
-      stormCircle = L.circle(c, { radius: w.radius_km * 1000, color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.22 }).addTo(map);
+      stormCircle = L.circle(c, { radius: w.radius_km * 1000, className: 'storm-pulse', color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.22 }).addTo(map);
       stormDot = L.circleMarker(c, { radius: 5, color: '#fff', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
       stormHeading = L.polyline([c, head], { color: '#ef4444', weight: 2, dashArray: '6 6' }).addTo(map);
+      trail = L.polyline(trailPts, { color: '#ef4444', weight: 2, opacity: 0.35, dashArray: '2 8' }).addTo(map);
     } else {
       stormCircle.setLatLng(c).setRadius(w.radius_km * 1000);
       stormDot.setLatLng(c);
       stormHeading.setLatLngs([c, head]);
+      trail.setLatLngs(trailPts);
     }
+  }
+
+  // Sonar ping where the agent just acted.
+  function ping(assetId) {
+    const latlng = assetPoint.get(assetId);
+    if (!latlng) return;
+    const m = L.circleMarker(latlng, { radius: 18, className: 'ping', color: '#3b82f6', weight: 3, fill: false }).addTo(map);
+    setTimeout(() => map.removeLayer(m), 1400);
   }
 
   // ── cards ──
   const cardsEl = document.getElementById('cards');
   function renderCards(assets) {
+    const now = Date.now();
     cardsEl.innerHTML = assets
       .map((a) => {
         const color = COLORS[a.status] ?? '#8b9bad';
         const dist = a.distanceKm != null ? ` · ${a.distanceKm} km` : '';
+        const fresh = a.lastAction && now - new Date(a.lastAction.at).getTime() < 6000 ? ' fresh' : '';
         const last = a.lastAction ? `<div class="last">↳ ${esc(a.lastAction.summary)}</div>` : '';
-        return `<div class="card" style="border-left-color:${color}">
+        return `<div class="card${fresh}" style="border-left-color:${color}">
           <h3>${esc(a.name)} <span class="pill" style="background:${color}">${a.status.toUpperCase()}</span></h3>
           <div class="meta">${a.type.replaceAll('_', ' ')}${dist}</div>${last}</div>`;
       })
       .join('');
   }
 
-  // ── feed (id-deduped; state replays last 50, live `feed` events stream in) ──
+  // ── feed: incremental prepend so entry animations + typewriter fire once ──
   const feedEl = document.getElementById('feed');
-  const feedMap = new Map();
+  const feedSeen = new Set();
+  let newestFeedId = 0;
   function addFeed(ev) {
-    if (feedMap.has(ev.id)) return false;
-    feedMap.set(ev.id, ev);
+    if (feedSeen.has(ev.id)) return false;
+    feedSeen.add(ev.id);
+    if (ev.id < newestFeedId) return false; // reconnect replay of older history — already past it
+    newestFeedId = ev.id;
+    const div = document.createElement('div');
+    div.className = `ev ${ev.type}`;
+    div.innerHTML = `<span class="tag">${ev.type.toUpperCase()}</span><span class="t">${ev.ts.slice(11, 19)}Z</span><span class="txt"></span>`;
+    const txt = div.querySelector('.txt');
+    feedEl.prepend(div);
+    while (feedEl.children.length > 80) feedEl.removeChild(feedEl.lastChild);
+    if (ev.type === 'reasoning') typewrite(txt, ev.text);
+    else txt.textContent = ev.text;
+    if (ev.type === 'action' && ev.data?.input?.asset_id) ping(ev.data.input.asset_id);
     return true;
   }
-  function renderFeed() {
-    const items = [...feedMap.values()].sort((x, y) => y.id - x.id).slice(0, 80);
-    feedEl.innerHTML = items
-      .map(
-        (ev) => `<div class="ev ${ev.type}"><span class="tag">${ev.type.toUpperCase()}</span><span class="t">${ev.ts.slice(11, 19)}Z</span>${esc(ev.text)}</div>`
-      )
-      .join('');
+  function typewrite(el, text) {
+    let i = 0;
+    const step = Math.max(1, Math.ceil(text.length / 110)); // finish in ~1.8s regardless of length
+    const t = setInterval(() => {
+      i += step;
+      el.textContent = text.slice(0, i);
+      if (i >= text.length) clearInterval(t);
+    }, 16);
   }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -242,7 +308,8 @@
       <div class="row"><span>System</span><b>${s.agent.running ? 'AUTONOMOUS — RUNNING' : 'STOPPED'}</b></div>
       <div class="row"><span>Weather</span><b>${s.weather ? `${esc(s.weather.severity)} ${esc(s.weather.kind)} · ETA ~${s.weather.eta_minutes} min` : 'clear'}</b></div>
       <div class="row"><span>Assets</span><b><span style="color:var(--safe)">${counts.safe ?? 0} safe</span> · <span style="color:var(--watch)">${counts.watch ?? 0} watch</span> · <span style="color:var(--threatened)">${counts.threatened ?? 0} threatened</span> · <span style="color:var(--handled)">${counts.handled ?? 0} handled</span></b></div>
-      <div class="row"><span>Actions taken</span><b>${s.actionsTaken.length}</b></div>
+      <div class="row"><span>Decisions / actions / repeats blocked</span><b>${s.stats?.decisions ?? 0} / ${s.stats?.actionsExecuted ?? 0} / ${s.stats?.duplicatesBlocked ?? 0}</b></div>
+      <div class="row"><span>Decision log (ClickHouse)</span><b>${s.stats?.loggedRows != null ? `${s.stats.loggedRows} rows` : 'off'}</b></div>
       <div class="row"><span>Brain</span><b>${esc(s.agent.model)}</b></div>
     </div>`;
   }
@@ -277,15 +344,19 @@
   // ── header + controls ──
   const dot = document.getElementById('dot'), conn = document.getElementById('conn');
   document.getElementById('inject').onclick = () =>
-    fetch('/api/demo/inject-storm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ intensity: 'severe', target: 'route-7' }) });
+    fetch('/api/demo/inject-storm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: document.getElementById('preset').value });
   document.getElementById('clear').onclick = () => fetch('/api/demo/clear', { method: 'POST' });
 
   function applyState(s) {
     document.getElementById('tick').textContent = s.tick;
-    document.getElementById('actions').textContent = s.actionsTaken.length;
-    document.getElementById('weatherline').textContent = s.weather
+    document.getElementById('st-dec').textContent = s.stats?.decisions ?? 0;
+    document.getElementById('st-act').textContent = s.stats?.actionsExecuted ?? 0;
+    document.getElementById('st-dup').textContent = s.stats?.duplicatesBlocked ?? 0;
+    const wl = document.getElementById('weatherline');
+    wl.textContent = s.weather
       ? `⛈ ${s.weather.severity} ${s.weather.kind} — ETA ~${s.weather.eta_minutes} min (conf ${s.weather.confidence})`
       : 'weather: clear';
+    wl.classList.toggle('weather-alert', Boolean(s.weather));
     s.assets.forEach(upsertAssetLayer);
     if (!didFit) {
       const all = s.assets.flatMap((a) => (a.geometry.type === 'polyline' ? a.geometry.coordinates : [a.geometry.coordinates]));
@@ -294,9 +365,7 @@
     }
     updateStorm(s.weather);
     renderCards(s.assets);
-    let changed = false;
-    for (const ev of s.feed) changed = addFeed(ev) || changed;
-    if (changed) renderFeed();
+    for (const ev of s.feed) addFeed(ev);
     for (const entry of s.agentLog ?? []) addAgentLog(entry);
     lastState = s;
     if (openuiMode === 'fallback') renderLocalCard(s);
@@ -307,9 +376,32 @@
   es.onopen = () => { dot.className = 'dot live'; conn.textContent = 'live'; };
   es.onerror = () => { dot.className = 'dot down'; conn.textContent = 'reconnecting…'; };
   es.addEventListener('state', (e) => applyState(JSON.parse(e.data)));
-  es.addEventListener('feed', (e) => { if (addFeed(JSON.parse(e.data))) renderFeed(); });
+  es.addEventListener('feed', (e) => addFeed(JSON.parse(e.data)));
   es.addEventListener('agentlog', (e) => addAgentLog(JSON.parse(e.data)));
   refreshOpenUICard();
+
+  // ── URL modes: ?present=1 hides demo controls (judging screen);
+  //    ?attract=1 auto-cycles storms (booth idle loop) ──
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.has('present')) document.body.classList.add('present');
+  if (urlParams.has('attract')) {
+    const badge = document.createElement('span');
+    badge.className = 'modebadge';
+    badge.textContent = 'ATTRACT';
+    document.querySelector('header .spacer').before(badge);
+    const presets = [...document.querySelectorAll('#preset option')].map((o) => o.value);
+    let phase = 'inject', phaseAt = Date.now() + 4000;
+    setInterval(() => {
+      if (Date.now() < phaseAt) return;
+      if (phase === 'inject') {
+        fetch('/api/demo/inject-storm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: presets[Math.floor(Math.random() * presets.length)] });
+        phase = 'clear'; phaseAt = Date.now() + 75_000; // let the storm play out
+      } else {
+        fetch('/api/demo/clear', { method: 'POST' });
+        phase = 'inject'; phaseAt = Date.now() + 8_000; // breathe, then next storm
+      }
+    }, 1000);
+  }
 </script>
 </body>
 </html>

@@ -36,6 +36,7 @@ export const state = {
   assets: loadAssets(),
   actionsTaken: [], // { dedupeKey, tool, assetId, threatId, input, rationale, at, result }
   actionKeys: new Set(),
+  stats: { decisions: 0, actionsExecuted: 0, duplicatesBlocked: 0 }, // autonomy scoreboard
   feed: [],
   agentLog: [], // ring buffer of '[AGENT LOG] …' console lines (tapped in server.js)
   lastWeatherHash: null,
@@ -85,6 +86,7 @@ export function getPublicState() {
     actionsTaken: state.actionsTaken.slice(-100),
     feed: state.feed.slice(-50),
     agentLog: state.agentLog.slice(-80),
+    stats: { ...state.stats },
     agent: { ...state.agent },
   };
 }
@@ -107,6 +109,7 @@ export function resetWorld() {
   state.weather = null;
   state.actionsTaken = [];
   state.actionKeys.clear();
+  state.stats = { decisions: 0, actionsExecuted: 0, duplicatesBlocked: 0 };
   state.lastWeatherHash = null;
   state.lastErrorText = null;
   state.agent.lastError = null;
