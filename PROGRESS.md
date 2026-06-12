@@ -1,6 +1,17 @@
 # PROGRESS
 
-**Status: M1 built and sandbox-verified. Bedrock live-call acceptance pending user creds (B-checks below). Next: M2 (Composio).**
+**Status: M1 + M2 built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: M3 (dashboard).**
+
+## M2 — Composio (real hands)
+- `@composio/core` wired in `src/agent/tools.js` executor bodies: `tools.execute(slug, { userId, arguments, dangerouslySkipVersionCheck })` (API confirmed against the package's type definitions).
+  - `send_slack_alert` → `SLACK_SEND_MESSAGE` (channel: `SLACK_CHANNEL_ID` override, else asset contact)
+  - `send_customer_email` → `GMAIL_SEND_EMAIL` (to: `DEMO_EMAIL_TO` override, else asset contact)
+  - `reschedule_event` → `GOOGLECALENDAR_UPDATE_EVENT` — only when `DEMO_CALENDAR_EVENT_ID` is set (a real calendar event id standing in for event-bayfest); always applies the state-only timeWindow shift for the dashboard
+  - `reroute_delivery` / `mark_asset_safe` stay state-only per spec
+- No `COMPOSIO_API_KEY` → labeled `WOULD EXECUTE` dry-run (verified in sandbox: actions once, dedupe skips, statuses correct). Real runs feed as `EXECUTED …`; failures feed as errors and never change asset status.
+- **Caveat for first real run:** Slack/Gmail/Calendar argument names follow Composio's standard catalog but couldn't be verified offline (their API is egress-blocked in the build sandbox). If a name is off, the exact Composio error text appears in the feed/console — fix is a one-liner in the `executors` map.
+- **User prerequisites:** Composio dashboard → connect Slack, Gmail, Google Calendar under your user/entity (set `COMPOSIO_USER_ID` if it isn't `default`), set `COMPOSIO_API_KEY` (+ optional `SLACK_CHANNEL_ID`, `DEMO_EMAIL_TO`, `DEMO_CALENDAR_EVENT_ID`).
+- **B3 = M2 acceptance gate (user):** inject storm → real Slack message lands; next tick logs "Skipped duplicate" instead of re-sending; then email; then calendar.
 
 ## Works (verified in the build sandbox, no creds needed)
 - `npm start` boots; loop ticks every `POLL_SECONDS` (default 30s); overlap guard.
