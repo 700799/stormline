@@ -27,7 +27,7 @@ async function tick() {
     state.weather = state.injectedStorm;
     pushFeed({
       type: 'weather',
-      text: `${state.weather.severity} storm ${state.weather.id} at ${state.weather.center.lat.toFixed(2)},${state.weather.center.lon.toFixed(2)} — ETA ~${state.weather.eta_minutes} min`,
+      text: `${state.weather.severity} ${state.weather.kind} ${state.weather.id} at ${state.weather.center.lat.toFixed(2)},${state.weather.center.lon.toFixed(2)}${state.weather.kind === 'wildfire' ? ` — burn radius ${state.weather.radius_km} km` : ''} — ETA ~${state.weather.eta_minutes} min`,
     });
   } else if (process.env.DEMO_MODE === 'false') {
     try {

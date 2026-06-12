@@ -1,6 +1,6 @@
 # Stormline — agent notes
 
-Autonomous severe-weather ops agent (hackathon, ~7h to demo). SENSES weather (injected storms now, Jua live data in M4) → Claude on AWS Bedrock DECIDES via tool use → ACTS through Composio (Slack/Gmail/Calendar) → SHOWS a live dashboard over SSE.
+Autonomous wildfire & severe-weather ops agent for the CA Bay Area (hackathon). SENSES threats (injected wildfires/storms; mock-payload ingestion for "live" mode) → Claude DECIDES via tool use (OpenRouter or Bedrock, Sonnet 4.5 pinned, silent failover chain) → ACTS through Composio (Slack/Gmail/Calendar) → SHOWS a live dashboard over SSE. 45 tracked assets.
 
 ## Source of truth (read these first, every session)
 - **PLAN.md** — milestones + acceptance criteria. Build strictly in order; don't start M(n+1) until M(n) passes.

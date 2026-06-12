@@ -142,7 +142,7 @@ export const TOOLS = [
   },
 ];
 
-const SYSTEM_PROMPT = `You are Stormline, an autonomous severe-weather operations agent. You protect the business assets listed in each update. No human reviews your decisions — you act, or you don't.
+const SYSTEM_PROMPT = `You are Stormline, an autonomous severe-weather and wildfire operations agent for the California Bay Area. You protect the business assets listed in each update. No human reviews your decisions — you act, or you don't.
 
 Rules:
 - Act decisively when threat confidence is >= 0.7 AND an asset is inside or near the threat area, or its time window overlaps the threat window.
@@ -172,15 +172,21 @@ const hhmm = (iso) => `${iso.slice(11, 16)}Z`;
 
 // Rebuilt every tick. Distances are pre-computed in JS — never make the model do geo math.
 export function buildUserMessage({ tick, now, weather, assets, actionsTaken }) {
-  const lines = [`TICK ${tick} — ${now} (all times UTC)`, '', 'WEATHER:'];
-  if (weather) {
+  const lines = [`TICK ${tick} — ${now} (all times UTC)`, '', 'THREAT:'];
+  if (weather && weather.kind === 'wildfire') {
+    lines.push(
+      `${weather.severity.toUpperCase()} WILDFIRE ${weather.id}: fire front at ${weather.center.lat.toFixed(2)},${weather.center.lon.toFixed(2)}, ` +
+        `burn radius ${weather.radius_km} km and GROWING (~${weather.spread_km} km per update), wind ${weather.wind_kph} kph pushing it bearing ${weather.movement.bearing_deg}° (toward the SW). ` +
+        `Confidence ${weather.confidence}, ETA to in-path assets ~${weather.eta_minutes} min.`
+    );
+  } else if (weather) {
     lines.push(
       `${weather.severity.toUpperCase()} ${weather.kind} ${weather.id}: center ${weather.center.lat.toFixed(2)},${weather.center.lon.toFixed(2)}, ` +
         `radius ${weather.radius_km} km, moving at ${weather.movement.speed_kmh} km/h bearing ${weather.movement.bearing_deg}°. ` +
         `Wind ${weather.wind_kph} kph, rain ${weather.rain_mm_h} mm/h, confidence ${weather.confidence}, ETA ~${weather.eta_minutes} min.`
     );
   } else {
-    lines.push('No active weather threats.');
+    lines.push('No active threats.');
   }
 
   lines.push('', 'ASSETS:');
@@ -351,40 +357,45 @@ function fakeDecision({ weather, assets }, label = '(fake brain) ') {
   if (!weather) {
     return { reasoning: `${label}All clear — no active threats.`, toolCalls: [], stopReason: 'end_turn' };
   }
+  const kind = weather.kind ?? 'storm';
   const nearby = assets
     .filter((a) => a.distanceKm != null && a.distanceKm <= weather.radius_km + 15)
     .sort((a, b) => a.distanceKm - b.distanceKm);
-  const target = nearby[0];
-  if (!target) {
-    return { reasoning: `${label}Storm ${weather.id} active but no asset within range yet. Monitoring.`, toolCalls: [], stopReason: 'end_turn' };
+  if (nearby.length === 0) {
+    return { reasoning: `${label}${kind} ${weather.id} active but no asset within range yet. Monitoring.`, toolCalls: [], stopReason: 'end_turn' };
   }
-  const toolCalls = [
-    {
-      id: 'fake-1',
+  // Act on the 3 closest in-range assets (loop still enforces the 5-action cap;
+  // re-issuing the same calls every tick exercises the dedupe guardrail).
+  const targets = nearby.slice(0, 3);
+  const toolCalls = [];
+  for (const target of targets) {
+    toolCalls.push({
+      id: `fake-${toolCalls.length + 1}`,
       name: 'send_slack_alert',
       input: {
         channel: target.contact?.slack ?? '#ops',
-        message: `${weather.severity} storm ${weather.id} approaching ${target.id} — ETA ~${weather.eta_minutes} min`,
+        message: `${weather.severity} ${kind} ${weather.id} approaching ${target.id} — ETA ~${weather.eta_minutes} min`,
         severity: 'critical',
         asset_id: target.id,
-        rationale: `${label}${target.id} is ${target.distanceKm.toFixed(1)} km from the storm center.`,
-      },
-    },
-  ];
-  if (target.type === 'delivery_route') {
-    toolCalls.push({
-      id: 'fake-2',
-      name: 'reroute_delivery',
-      input: {
-        route_id: target.id,
-        instruction: 'Hold departures and route around the storm cell to the east.',
-        asset_id: target.id,
-        rationale: `${label}Route intersects the storm track during its active window.`,
+        rationale: `${label}${target.id} is ${target.distanceKm.toFixed(1)} km from the ${kind} front.`,
       },
     });
+    if (target.type === 'delivery_route' && toolCalls.length < 5) {
+      toolCalls.push({
+        id: `fake-${toolCalls.length + 1}`,
+        name: 'reroute_delivery',
+        input: {
+          route_id: target.id,
+          instruction: kind === 'wildfire' ? 'Hold departures and route around the fire perimeter to the east.' : 'Hold departures and route around the storm cell to the east.',
+          asset_id: target.id,
+          rationale: `${label}Route intersects the ${kind} track during its active window.`,
+        },
+      });
+    }
+    if (toolCalls.length >= 5) break;
   }
   return {
-    reasoning: `${label}${weather.severity} storm ${weather.id} threatens ${target.id} (${target.distanceKm.toFixed(1)} km). Alerting and protecting it.`,
+    reasoning: `${label}${weather.severity} ${kind} ${weather.id} threatens ${targets.map((t) => `${t.id} (${t.distanceKm.toFixed(1)} km)`).join(', ')}. Alerting and protecting the closest assets first.`,
     toolCalls,
     stopReason: 'tool_use',
   };

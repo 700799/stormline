@@ -4,16 +4,17 @@
   "cells": [
     {
       "cell_id": "mock-cell-001",
-      "phenomenon": "thunderstorm",
+      "phenomenon": "wildfire",
       "category": "severe",
-      "centroid": { "latitude": 37.736, "longitude": -122.183 },
-      "radius_meters": 14000,
-      "heading_degrees": 130,
-      "speed_ms": 6.9,
-      "max_wind_kmh": 92,
-      "precip_rate_mmh": 28,
+      "centroid": { "latitude": 37.85, "longitude": -122.18 },
+      "radius_meters": 10000,
+      "spread_km_per_update": 1.0,
+      "heading_degrees": 225,
+      "speed_ms": 3.3,
+      "max_wind_kmh": 62,
+      "precip_rate_mmh": 0,
       "probability": 0.88,
-      "minutes_to_impact": 75
+      "minutes_to_impact": 60
     }
   ]
 }

@@ -1,6 +1,6 @@
-# ⛈ Stormline
+# 🔥⛈ Stormline
 
-**An autonomous severe-weather operations agent.** Stormline watches real business assets — delivery routes, an outdoor festival, a field crew, a warehouse — and when a storm threatens them it **decides and acts entirely on its own**: Slack alerts, customer emails, calendar moves, reroutes. After a weather event enters the pipeline, no human touches anything. You watch it think on a live dashboard.
+**An autonomous wildfire & severe-weather operations agent for the California Bay Area.** Stormline watches 45 real Bay Area business assets — delivery routes, outdoor events, field crews, warehouses — and when a fire front or storm cell threatens them it **decides and acts entirely on its own**: Slack alerts, customer emails, calendar moves, reroutes. After a threat enters the pipeline, no human touches anything. You watch it think on a live dashboard — wildfires ignite small, then grow and drift on Diablo winds while the agent works the perimeter.
 
 ```
 SENSE                 DECIDE                    ACT                     SHOW

@@ -3,15 +3,7 @@
     "id": "route-7",
     "name": "Delivery Route 7 (Oakland → San Jose)",
     "type": "delivery_route",
-    "geometry": {
-      "type": "polyline",
-      "coordinates": [
-        [37.8044, -122.2712],
-        [37.6391, -122.1097],
-        [37.5485, -121.9886],
-        [37.3382, -121.8863]
-      ]
-    },
+    "geometry": { "type": "polyline", "coordinates": [[37.8044, -122.2712], [37.6391, -122.1097], [37.5485, -121.9886], [37.3382, -121.8863]] },
     "timeWindow": { "startOffsetMin": 30, "durationMin": 360 },
     "contact": { "slack": "#dispatch" },
     "sensitivity": "normal"
@@ -20,18 +12,117 @@
     "id": "route-12",
     "name": "Delivery Route 12 (SF → Sacramento)",
     "type": "delivery_route",
-    "geometry": {
-      "type": "polyline",
-      "coordinates": [
-        [37.7955, -122.3937],
-        [37.8715, -122.273],
-        [38.1041, -122.2566],
-        [38.5449, -121.7405],
-        [38.5816, -121.4944]
-      ]
-    },
+    "geometry": { "type": "polyline", "coordinates": [[37.7955, -122.3937], [37.8715, -122.273], [38.1041, -122.2566], [38.5449, -121.7405], [38.5816, -121.4944]] },
     "timeWindow": { "startOffsetMin": 120, "durationMin": 420 },
     "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-3",
+    "name": "Delivery Route 3 (SF → Palo Alto)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.7749, -122.4194], [37.6879, -122.4702], [37.563, -122.3255], [37.4419, -122.143]] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 300 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-9",
+    "name": "Delivery Route 9 (Richmond → Fairfield)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.9358, -122.3477], [38.1041, -122.2566], [38.2492, -122.0405]] },
+    "timeWindow": { "startOffsetMin": 60, "durationMin": 300 },
+    "contact": { "slack": "#logistics" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-15",
+    "name": "Delivery Route 15 (San Jose → Hayward)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.3382, -121.8863], [37.5485, -121.9886], [37.6688, -122.0808]] },
+    "timeWindow": { "startOffsetMin": 45, "durationMin": 240 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-18",
+    "name": "Delivery Route 18 (SF → Novato)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.806, -122.4659], [37.8591, -122.4853], [37.9735, -122.5311], [38.1074, -122.5697]] },
+    "timeWindow": { "startOffsetMin": 90, "durationMin": 300 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-21",
+    "name": "Delivery Route 21 (Oakland → Concord)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.8044, -122.2712], [37.8857, -122.118], [37.9101, -122.0652], [37.978, -122.0311]] },
+    "timeWindow": { "startOffsetMin": 15, "durationMin": 360 },
+    "contact": { "slack": "#logistics" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-22",
+    "name": "Delivery Route 22 (Hayward → San Mateo)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.6688, -122.0808], [37.6213, -122.207], [37.563, -122.3255]] },
+    "timeWindow": { "startOffsetMin": 180, "durationMin": 240 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-27",
+    "name": "Delivery Route 27 (Vallejo → Napa)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[38.1041, -122.2566], [38.2027, -122.2608], [38.2975, -122.2869]] },
+    "timeWindow": { "startOffsetMin": 75, "durationMin": 240 },
+    "contact": { "slack": "#logistics" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-31",
+    "name": "Delivery Route 31 (Dublin → Livermore)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.7022, -121.9358], [37.6624, -121.8747], [37.6819, -121.768]] },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 300 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-33",
+    "name": "Delivery Route 33 (Daly City → Half Moon Bay)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.6879, -122.4702], [37.597, -122.5011], [37.4636, -122.4286]] },
+    "timeWindow": { "startOffsetMin": 120, "durationMin": 240 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-41",
+    "name": "Delivery Route 41 (Berkeley → Alameda)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.8715, -122.273], [37.8044, -122.2712], [37.7652, -122.2416]] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 480 },
+    "contact": { "slack": "#logistics" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-44",
+    "name": "Delivery Route 44 (San Jose → Sunnyvale)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.3382, -121.8863], [37.4323, -121.8996], [37.3688, -122.0363]] },
+    "timeWindow": { "startOffsetMin": 210, "durationMin": 240 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-50",
+    "name": "Delivery Route 50 (Concord → Antioch)",
+    "type": "delivery_route",
+    "geometry": { "type": "polyline", "coordinates": [[37.978, -122.0311], [38.0049, -121.8058]] },
+    "timeWindow": { "startOffsetMin": 150, "durationMin": 240 },
+    "contact": { "slack": "#logistics" },
     "sensitivity": "normal"
   },
   {
@@ -44,6 +135,87 @@
     "sensitivity": "normal"
   },
   {
+    "id": "event-ggpark",
+    "name": "Golden Gate Park Food Fair",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.7694, -122.4862] },
+    "timeWindow": { "startOffsetMin": 60, "durationMin": 360 },
+    "contact": { "email": "organizer@ggparkfair.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-berkmarina",
+    "name": "Berkeley Marina Kite Festival",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.8664, -122.3108] },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 300 },
+    "contact": { "email": "organizer@berkkites.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-sjplaza",
+    "name": "San Jose Plaza Concert",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.3337, -121.8907] },
+    "timeWindow": { "startOffsetMin": 240, "durationMin": 240 },
+    "contact": { "email": "organizer@sjplaza.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-sausalito",
+    "name": "Sausalito Art Walk",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.8591, -122.4853] },
+    "timeWindow": { "startOffsetMin": 120, "durationMin": 300 },
+    "contact": { "email": "organizer@sausart.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-oakff",
+    "name": "Oakland First Fridays",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.8126, -122.2666] },
+    "timeWindow": { "startOffsetMin": 300, "durationMin": 240 },
+    "contact": { "email": "organizer@oakff.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-napamkt",
+    "name": "Napa Farmers Market",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [38.2975, -122.2869] },
+    "timeWindow": { "startOffsetMin": 45, "durationMin": 240 },
+    "contact": { "email": "organizer@napamkt.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-pacifica",
+    "name": "Pacifica Surf Jam",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.6138, -122.4869] },
+    "timeWindow": { "startOffsetMin": 90, "durationMin": 360 },
+    "contact": { "email": "organizer@surfjam.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-vallejofair",
+    "name": "Vallejo Waterfront Fair",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [38.0992, -122.2654] },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 300 },
+    "contact": { "email": "organizer@vallejofair.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-paflea",
+    "name": "Palo Alto Flea Market",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.4419, -122.143] },
+    "timeWindow": { "startOffsetMin": 180, "durationMin": 300 },
+    "contact": { "email": "organizer@paflea.example" },
+    "sensitivity": "normal"
+  },
+  {
     "id": "crew-north",
     "name": "Field Crew North (Marin)",
     "type": "field_crew",
@@ -53,10 +225,181 @@
     "sensitivity": "normal"
   },
   {
+    "id": "crew-east",
+    "name": "Field Crew East (Walnut Creek)",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.9101, -122.0652] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 540 },
+    "contact": { "slack": "#field-crew-east" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-south",
+    "name": "Field Crew South (Santa Clara)",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.3541, -121.9552] },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 480 },
+    "contact": { "slack": "#field-crew-south" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-peninsula",
+    "name": "Field Crew Peninsula (San Mateo)",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.563, -122.3255] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 480 },
+    "contact": { "slack": "#field-crew-peninsula" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-richmond",
+    "name": "Field Crew Richmond",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.9358, -122.3477] },
+    "timeWindow": { "startOffsetMin": 60, "durationMin": 420 },
+    "contact": { "slack": "#field-crew-richmond" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-hayward",
+    "name": "Field Crew Hayward",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.6688, -122.0808] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 600 },
+    "contact": { "slack": "#field-crew-hayward" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-sf",
+    "name": "Field Crew SF (Mission)",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.7599, -122.4148] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 480 },
+    "contact": { "slack": "#field-crew-sf" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-napa",
+    "name": "Field Crew Napa",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [38.3047, -122.2989] },
+    "timeWindow": { "startOffsetMin": 90, "durationMin": 420 },
+    "contact": { "slack": "#field-crew-napa" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-fairfield",
+    "name": "Field Crew Fairfield",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [38.2492, -122.0405] },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 480 },
+    "contact": { "slack": "#field-crew-fairfield" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-livermore",
+    "name": "Field Crew Livermore",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.6819, -121.768] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 540 },
+    "contact": { "slack": "#field-crew-livermore" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-pacifica",
+    "name": "Field Crew Pacifica",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.6005, -122.494] },
+    "timeWindow": { "startOffsetMin": 120, "durationMin": 360 },
+    "contact": { "slack": "#field-crew-pacifica" },
+    "sensitivity": "normal"
+  },
+  {
     "id": "warehouse-oak",
     "name": "Oakland Warehouse",
     "type": "warehouse",
     "geometry": { "type": "point", "coordinates": [37.7397, -122.2034] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-port",
+    "name": "Port of Oakland DC",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.8, -122.32] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "warehouse-sleandro",
+    "name": "San Leandro Depot",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.7249, -122.1561] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-richmond",
+    "name": "Richmond Storage Yard",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.9266, -122.3711] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-ssf",
+    "name": "South SF Cold Storage",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.6547, -122.4077] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "warehouse-fremont",
+    "name": "Fremont Distribution Hub",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.53, -121.97] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-sj",
+    "name": "San Jose Fulfillment",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.3722, -121.9] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "warehouse-vallejo",
+    "name": "Vallejo Supply Depot",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [38.11, -122.27] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-concord",
+    "name": "Concord Parts Warehouse",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.97, -122.05] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  },
+  {
+    "id": "warehouse-novato",
+    "name": "Novato North Depot",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [38.1074, -122.5697] },
     "timeWindow": null,
     "contact": { "email": "ops@stormline.example" },
     "sensitivity": "low"

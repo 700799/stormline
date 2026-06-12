@@ -12,19 +12,19 @@ Pre-flight (before showtime):
 
 ## Beats
 
-1. **Set the scene (30s).** "Stormline watches real business assets — two delivery routes, an outdoor festival, a field crew, a warehouse — and acts on severe weather with zero human input." Point at the all-green map.
+1. **Set the scene (30s).** "Stormline watches 45 real Bay Area business assets — delivery routes, outdoor events, field crews, warehouses — and acts on wildfire and severe-weather threats with zero human input." Point at the all-green map.
 
-2. **Trigger (10s).** "A severe cell just formed over the East Bay." Click **Inject storm** (or:)
+2. **Trigger (10s).** "Red-flag conditions — a fire just ignited in the Oakland Hills." Pick **🔥 extreme fire @ Oakland Hills** and click **Inject threat** (or:)
    ```bash
    curl -X POST <url>/api/demo/inject-storm -H 'content-type: application/json' \
-     -d '{"intensity":"severe","target":"route-7"}'
+     -d '{"kind":"wildfire","intensity":"extreme","target":"route-21"}'
    ```
-   Emphasize: *this only controls when the storm happens — everything after is the agent.*
+   Emphasize: *this only controls when and where the fire starts — everything after is the agent.*
 
-3. **Watch it think (60–90s).** Narrate the reasoning feed as it streams: the storm cell pulses and advances (leaving its trail) → route-7 pulses red → Claude's reasoning types itself out → actions fire with a blue sonar ping on the map at each protected asset (Slack alert lands in the channel — show the phone, email, calendar move). Cards flash and flip blue (handled).
+3. **Watch it think (60–90s).** Narrate the reasoning feed: the fire front pulses orange and **grows** while Diablo winds push it southwest → assets cascade green→amber→red as the perimeter expands → Claude's reasoning types itself out → actions fire with a blue sonar ping at each protected asset (Slack alert lands in the channel — show the phone, email, calendar move). Cards flash and flip blue (handled), the timeline strip fills with activity.
 
-4. **Prove autonomy (20s).** Point at the header scoreboard: "X decisions, Y actions — and **Z repeats blocked**: every tick it re-evaluates, and refuses to spam what it already handled." Nobody touched anything since the inject.
+4. **Prove autonomy (20s).** Point at the header scoreboard: "X decisions, Y actions — and **Z repeats blocked**: every tick it re-evaluates the spreading fire, protects newly threatened assets, and refuses to spam what it already handled." Nobody touched anything since the inject.
 
-   Optional second beat: pick **extreme @ BayFest** from the preset dropdown and inject again — a new threat, fresh decisions, more assets protected.
+   Optional second beat: **🔥 severe fire @ North Bay** or **⛈ extreme storm @ route-12** — a new threat, fresh decisions, different assets.
 
-5. **Close (10s).** "Same pipeline ingests live Jua forecasts — the injected cell is just a time machine for the demo." `POST /api/demo/clear` resets for the next run.
+5. **Close (10s).** "Same pipeline ingests live provider data — the injected fire is just a time machine for the demo." `POST /api/demo/clear` resets for the next run.
