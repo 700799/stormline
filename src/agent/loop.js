@@ -98,7 +98,10 @@ async function tick() {
       pushFeed({ type: 'system', text: `Action cap (${MAX_ACTIONS_PER_TICK}) reached — skipped ${call.name}` });
       continue;
     }
-    const dedupeKey = `${call.name}:${call.input?.asset_id}:${threatId}`;
+    // Dynamic Composio tools carry no asset_id — fall back to channel/recipient
+    // so the never-repeat guarantee still holds for direct sends.
+    const ident = call.input?.asset_id ?? call.input?.channel ?? call.input?.recipient_email ?? 'global';
+    const dedupeKey = `${call.name}:${ident}:${threatId}`;
     if (hasAction(dedupeKey)) {
       state.stats.duplicatesBlocked += 1;
       console.log(`[AGENT LOG] guardrail: duplicate ${dedupeKey} — already done, skipping`);

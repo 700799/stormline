@@ -44,6 +44,64 @@ async function executeComposio(slugs, args) {
   throw lastError ?? new Error('composio: empty slug chain');
 }
 
+// ── Composio dynamic tools (appended to the OpenRouter tools array) ──
+// composio.tools.get() returns OpenAI-formatted tool definitions (OpenRouter
+// speaks OpenAI), so the brain can call SLACK_SEND_MESSAGE / GMAIL_SEND_EMAIL
+// directly. Cached after first fetch; empty when no key or unreachable —
+// the curated five tools always remain.
+let dynamicTools = null;
+const dynamicToolNames = new Set();
+const DYNAMIC_SLUGS = ['SLACK_SEND_MESSAGE', 'GMAIL_SEND_EMAIL'];
+
+export async function getComposioOpenAITools() {
+  if (!hasComposio()) return [];
+  if (dynamicTools) return dynamicTools;
+  const fetched = [];
+  for (const slug of DYNAMIC_SLUGS) {
+    try {
+      const got = await client().tools.get(composioUserId(), slug);
+      for (const tool of Array.isArray(got) ? got : [got]) {
+        const name = tool?.function?.name ?? tool?.name;
+        if (name) {
+          dynamicToolNames.add(name);
+          fetched.push(tool);
+        }
+      }
+      console.log(`[AGENT LOG] composio dynamic tool loaded: ${slug}`);
+    } catch (e) {
+      console.log(`[AGENT LOG] composio dynamic tool ${slug} unavailable — ${e?.message ?? e}`);
+    }
+  }
+  dynamicTools = fetched;
+  if (fetched.length) {
+    pushFeed({ type: 'system', text: `Composio direct tools armed for the brain: ${[...dynamicToolNames].join(', ')}` });
+  }
+  return dynamicTools;
+}
+
+export const isDynamicComposioTool = (name) => dynamicToolNames.has(name);
+
+// Direct execution for a dynamic Composio tool call (no curated executor, no
+// asset to mutate — feed line + result only).
+async function runDynamicComposio(call) {
+  const target = call.input?.channel ?? call.input?.recipient_email ?? '';
+  const summary = `${call.name} (composio direct)${target ? ` → ${target}` : ''}`;
+  try {
+    console.log(`[AGENT LOG] executing dynamic composio tool ${call.name} — input: ${JSON.stringify(call.input)}`);
+    await executeComposio([call.name], call.input ?? {});
+    pushFeed({
+      type: 'action',
+      text: `EXECUTED ${summary} — ${call.input?.rationale ?? 'live emergency alert'}`,
+      data: { tool: call.name, input: call.input, simulated: false },
+    });
+    return { ok: true, simulated: false, summary };
+  } catch (e) {
+    const error = e?.message ?? String(e);
+    pushFeed({ type: 'system', text: `⚠ ${call.name} could not be delivered — see console log` });
+    return { ok: false, error };
+  }
+}
+
 // Boot-time visibility: list connected accounts so a missing Slack/Gmail
 // connection is obvious BEFORE the demo, not during it. Never blocks boot.
 export async function initComposio() {
@@ -139,6 +197,7 @@ export async function runToolCall(call, { mutateAsset = true } = {}) {
   try {
     const exec = executors[call.name];
     if (!exec) {
+      if (isDynamicComposioTool(call.name)) return runDynamicComposio(call);
       const error = `unknown tool: ${call.name}`;
       pushFeed({ type: 'system', text: `⚠ Tool call skipped — ${error}` });
       return { ok: false, error };
