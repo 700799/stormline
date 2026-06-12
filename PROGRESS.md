@@ -1,6 +1,14 @@
 # PROGRESS
 
-**Status: M1 + M2 built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: M3 (dashboard).**
+**Status: M1 + M2 + M3 built and sandbox-verified (dry-run). Live-call acceptance pending user creds (B-checks below). Next: your local verification, then Render deploy; after that M4 (Jua live data).**
+
+## M3 — The face (dashboard)
+- `public/dashboard.html` rewritten: single file, CDN-only (Leaflet 1.9.4 via cdnjs + CARTO dark basemap — loads browser-side), dark high-contrast, large fonts.
+- Map: storm = translucent red circle (true `radius_km`) + center dot + dashed heading line, moving every tick; assets = thick polylines/markers colored by status (green safe / amber watch / red threatened / blue handled); auto-fits to all assets on first state.
+- Right column: **reasoning/actions feed is the most prominent panel** (newest-first, type-badged, id-deduped against SSE reconnect replays); asset cards with status pills + last action; header with live dot, tick, weather one-liner, action count.
+- Demo controls in the header: ⚡ Inject storm (severe @ route-7) and Reset.
+- Sandbox-verified: `GET /` 200 with expected markup; SSE carries `feed` + `state` events through a full FAKE_BRAIN storm arc (incl. `extreme` @ `event-bayfest` variant). **Visual check is browser-side → part of B4.**
+- **B4 = M3 acceptance gate (user):** open `/` during an inject — storm circle moves, cards flip colors, feed streams; then deploy to Render (new Web Service off `main`, build `npm install`, start `npm start`, add env vars, health check `/healthz`) and run the same arc there. DEMO_SCRIPT.md has the full demo beats.
 
 ## M2 — Composio (real hands)
 - `@composio/core` wired in `src/agent/tools.js` executor bodies: `tools.execute(slug, { userId, arguments, dangerouslySkipVersionCheck })` (API confirmed against the package's type definitions).
