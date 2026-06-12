@@ -5,7 +5,7 @@ import { state, pushFeed, broadcastState, recordAction, hasAction } from '../sta
 import { advanceStorm } from '../data/injected.js';
 import { decide, assetDistanceKm } from './brain.js';
 import { runToolCall } from './tools.js';
-import { getForecast } from '../data/jua.js';
+import { getForecast } from '../data/forecast.js';
 
 const MAX_ACTIONS_PER_TICK = 5;
 
@@ -21,7 +21,7 @@ async function tick() {
   state.tick += 1;
   const now = new Date().toISOString();
 
-  // 1. SENSE — injected storm wins; else live forecast (M4) unless DEMO_MODE
+  // 1. SENSE — injected storm wins; else mock-payload ingestion unless DEMO_MODE
   if (state.injectedStorm) {
     advanceStorm(state.injectedStorm);
     state.weather = state.injectedStorm;
@@ -33,7 +33,7 @@ async function tick() {
     try {
       state.weather = await getForecast();
     } catch (e) {
-      pushFeed({ type: 'error', text: `Jua fetch failed — ${e?.message ?? e}` });
+      pushFeed({ type: 'error', text: `Forecast ingestion failed — ${e?.message ?? e}` });
       state.weather = null;
     }
   } else {

@@ -1,0 +1,19 @@
+{
+  "provider": "mock",
+  "generated_at": "2026-06-12T00:00:00Z",
+  "cells": [
+    {
+      "cell_id": "mock-cell-001",
+      "phenomenon": "thunderstorm",
+      "category": "severe",
+      "centroid": { "latitude": 37.736, "longitude": -122.183 },
+      "radius_meters": 14000,
+      "heading_degrees": 130,
+      "speed_ms": 6.9,
+      "max_wind_kmh": 92,
+      "precip_rate_mmh": 28,
+      "probability": 0.88,
+      "minutes_to_impact": 75
+    }
+  ]
+}

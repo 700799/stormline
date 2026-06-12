@@ -9,10 +9,12 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch --env-file=.env src/server.js"
+    "dev": "node --watch --env-file=.env src/server.js",
+    "demo": "FAKE_BRAIN=true DEMO_MODE=true POLL_SECONDS=5 node src/server.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.30.2",
+    "@composio/core": "^0.10.0",
     "express": "^5.1.0"
   }
 }

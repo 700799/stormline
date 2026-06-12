@@ -22,13 +22,14 @@ Autonomous severe-weather ops agent (hackathon, ~7h to demo). SENSES weather (in
 ## Stack & commands
 Node ≥20.6 (ES modules), Express 5, SSE, `@anthropic-ai/bedrock-sdk`, `@composio/core` (M2).
 - Setup: `cp .env.example .env`, fill creds → `npm run dev` (uses `--env-file`). Prod: `npm start`.
+- `npm run demo` — zero-creds rehearsal: FAKE_BRAIN + fast ticks; open http://localhost:3000.
 - Fast iteration: `POLL_SECONDS=5`. No AWS creds: `FAKE_BRAIN=true` (canned decisions, clearly labeled — also the live-demo fallback if Bedrock flakes).
 - Inject: `curl -X POST localhost:3000/api/demo/inject-storm -H 'content-type: application/json' -d '{"intensity":"severe","target":"route-7"}'`
 - Reset: `curl -X POST localhost:3000/api/demo/clear`
 - Console shows `[AGENT LOG]` lines: context sent to the brain → raw Bedrock response → thought process → decision → tool execution → guardrails.
 
 ## Frozen contracts (dashboard + M4 depend on these — don't reshape)
-- **Weather/storm shape**: defined in `src/data/injected.js`; `jua.js normalizeForecast()` (M4) must emit the same shape. The loop never knows the source.
+- **Weather/storm shape**: defined in `src/data/injected.js`; `forecast.js normalizePayload()` (mock-payload ingestion, DEMO_MODE=false) emits the same shape. The loop never knows the source. (Jua was aborted for submission — do not reintroduce it.)
 - **Public state**: `getPublicState()` in `src/state.js` (served by `/api/state` and SSE `state` events).
 - **SSE protocol**: named events `state` (full state: on connect + once per tick) and `feed` (`{id, ts, type, text}`); `: hb` heartbeat every 25s. New event types may be ADDED; these two are never renamed/reshaped.
 - **Dedupe key**: `tool:asset_id:threatId` — every tool's input_schema requires `asset_id` + `rationale`.
