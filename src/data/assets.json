@@ -1,0 +1,64 @@
+[
+  {
+    "id": "route-7",
+    "name": "Delivery Route 7 (Oakland → San Jose)",
+    "type": "delivery_route",
+    "geometry": {
+      "type": "polyline",
+      "coordinates": [
+        [37.8044, -122.2712],
+        [37.6391, -122.1097],
+        [37.5485, -121.9886],
+        [37.3382, -121.8863]
+      ]
+    },
+    "timeWindow": { "startOffsetMin": 30, "durationMin": 360 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "route-12",
+    "name": "Delivery Route 12 (SF → Sacramento)",
+    "type": "delivery_route",
+    "geometry": {
+      "type": "polyline",
+      "coordinates": [
+        [37.7955, -122.3937],
+        [37.8715, -122.273],
+        [38.1041, -122.2566],
+        [38.5449, -121.7405],
+        [38.5816, -121.4944]
+      ]
+    },
+    "timeWindow": { "startOffsetMin": 120, "durationMin": 420 },
+    "contact": { "slack": "#dispatch" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "event-bayfest",
+    "name": "BayFest Vendor Market",
+    "type": "outdoor_event",
+    "geometry": { "type": "point", "coordinates": [37.7956, -122.3934] },
+    "timeWindow": { "startOffsetMin": 90, "durationMin": 300 },
+    "contact": { "email": "organizer@bayfest.example" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "crew-north",
+    "name": "Field Crew North (Marin)",
+    "type": "field_crew",
+    "geometry": { "type": "point", "coordinates": [37.9735, -122.5311] },
+    "timeWindow": { "startOffsetMin": 0, "durationMin": 480 },
+    "contact": { "slack": "#field-crew-north" },
+    "sensitivity": "normal"
+  },
+  {
+    "id": "warehouse-oak",
+    "name": "Oakland Warehouse",
+    "type": "warehouse",
+    "geometry": { "type": "point", "coordinates": [37.7397, -122.2034] },
+    "timeWindow": null,
+    "contact": { "email": "ops@stormline.example" },
+    "sensitivity": "low"
+  }
+]

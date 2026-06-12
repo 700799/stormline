@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stormline — debug</title>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: #0b0f14; color: #d8e1ea; margin: 20px; }
+  h1 { font-size: 20px; } h2 { font-size: 14px; color: #7d8da0; text-transform: uppercase; letter-spacing: .08em; }
+  small { color: #7d8da0; font-weight: normal; }
+  button { font: inherit; padding: 6px 14px; margin-right: 8px; cursor: pointer; background: #1d2733; color: #d8e1ea; border: 1px solid #324155; border-radius: 4px; }
+  button:hover { background: #27374a; }
+  pre { background: #11161d; border: 1px solid #1f2937; border-radius: 4px; padding: 10px; overflow: auto; max-height: 38vh; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>⛈ Stormline <small id="status">connecting…</small></h1>
+<p>
+  <button onclick="demo('inject-storm')">Inject storm</button>
+  <button onclick="demo('clear')">Clear</button>
+</p>
+<h2>World state</h2>
+<pre id="state">…</pre>
+<h2>Agent feed (newest first)</h2>
+<pre id="feed"></pre>
+<script>
+  // M1 debug page — replaced wholesale in M3. Only the SSE contract persists.
+  const feedEl = document.getElementById('feed');
+  const stateEl = document.getElementById('state');
+  const statusEl = document.getElementById('status');
+
+  function demo(path) {
+    fetch('/api/demo/' + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  }
+
+  const es = new EventSource('/api/stream');
+  es.onopen = () => (statusEl.textContent = 'live');
+  es.onerror = () => (statusEl.textContent = 'reconnecting…');
+  es.addEventListener('feed', (e) => {
+    const ev = JSON.parse(e.data);
+    feedEl.textContent = `${ev.ts} [${ev.type}] ${ev.text}\n` + feedEl.textContent;
+  });
+  es.addEventListener('state', (e) => {
+    const s = JSON.parse(e.data);
+    const w = s.weather
+      ? `${s.weather.severity} ${s.weather.id} @ ${s.weather.center.lat.toFixed(2)},${s.weather.center.lon.toFixed(2)} — ETA ${s.weather.eta_minutes}m`
+      : 'clear';
+    stateEl.textContent =
+      `tick ${s.tick} | weather: ${w} | actions: ${s.actionsTaken.length} | model: ${s.agent.model}\n` +
+      s.assets.map((a) => `${a.id}: ${a.status}${a.distanceKm != null ? ` (${a.distanceKm} km)` : ''}`).join('\n');
+  });
+</script>
+</body>
+</html>
