@@ -19,8 +19,10 @@ Pre-flight (before judges arrive):
    ```
    Emphasize: *this only controls when the storm happens — everything after is the agent.*
 
-3. **Watch it think (60–90s).** Narrate the reasoning feed as it streams: storm advances on the map each tick → route-7 flips amber→red → Claude's reasoning line appears → real actions fire (Slack alert lands in the channel — show the phone, email, calendar move). Cards flip blue (handled).
+3. **Watch it think (60–90s).** Narrate the reasoning feed as it streams: the storm cell pulses and advances (leaving its trail) → route-7 pulses red → Claude's reasoning types itself out → actions fire with a blue sonar ping on the map at each protected asset (Slack alert lands in the channel — show the phone, email, calendar move). Cards flash and flip blue (handled).
 
-4. **Prove autonomy (20s).** Show the feed's "skipped duplicate" lines on later ticks: "it doesn't spam — it knows what it already did." Nobody touched anything since the inject.
+4. **Prove autonomy (20s).** Point at the header scoreboard: "X decisions, Y actions — and **Z repeats blocked**: every tick it re-evaluates, and refuses to spam what it already handled." Nobody touched anything since the inject.
+
+   Optional second beat: pick **extreme @ BayFest** from the preset dropdown and inject again — a new threat, fresh decisions, more assets protected.
 
 5. **Close (10s).** "Same pipeline ingests live Jua forecasts — the injected cell is just a time machine for the demo." `POST /api/demo/clear` resets for the next run.
